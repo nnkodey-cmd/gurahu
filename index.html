@@ -1,0 +1,2197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>グラフ・表 れんしゅうアプリ</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@400;700&family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap');
+:root{
+  --sky:#29b6f6;--skyL:#e3f2fd;--grass:#66bb6a;--grassL:#e8f5e9;
+  --coral:#ff7043;--coralL:#fbe9e7;--sun:#ffd600;--purple:#ab47bc;
+  --bg:#f0f8ff;--card:#fff;--text:#1a2a3a;--sub:#6a7a8a;
+  --r:18px;--sh:0 4px 20px rgba(0,0,0,0.09);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'M PLUS Rounded 1c','メイリオ',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* ---- header ---- */
+header{background:linear-gradient(120deg,#1565c0,#00838f);padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 3px 14px rgba(0,0,0,0.22);}
+.logo-wrap{font-size:2.2rem;animation:spin 6s linear infinite;display:inline-block;}
+@keyframes spin{0%,90%{transform:rotate(0)}95%{transform:rotate(20deg)}100%{transform:rotate(0)}}
+header h1{font-family:'Kaisei Decol',serif;font-size:1.35rem;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,0.3);line-height:1.25;}
+header h1 small{font-size:0.72rem;display:block;font-family:'M PLUS Rounded 1c',sans-serif;opacity:.85;font-weight:400;}
+
+/* ---- streak / score bar ---- */
+.top-bar{background:#fff;border-bottom:3px solid #e1f0fb;padding:8px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.streak-badge{background:linear-gradient(135deg,#ff8f00,#fdd835);color:#fff;font-weight:800;font-size:.8rem;padding:4px 12px;border-radius:20px;box-shadow:0 2px 6px rgba(255,143,0,.4);display:flex;align-items:center;gap:4px;}
+.xp-bar-wrap{flex:1;min-width:120px;max-width:260px;}
+.xp-label{font-size:.72rem;font-weight:700;color:var(--sub);margin-bottom:3px;display:flex;justify-content:space-between;}
+.xp-track{background:#e0e0e0;border-radius:8px;height:8px;overflow:hidden;}
+.xp-fill{height:100%;background:linear-gradient(90deg,#ab47bc,#7c43bd);border-radius:8px;transition:width .5s ease;}
+.total-score-disp{margin-left:auto;font-weight:800;font-size:.85rem;color:#1565c0;}
+
+/* ---- grade bar ---- */
+.grade-bar{background:#fff;padding:8px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:2px solid #e8f4fd;}
+.grade-bar label{font-size:.82rem;font-weight:700;color:var(--sub);}
+.grade-btn{padding:5px 15px;border:2px solid #ccc;border-radius:20px;background:#fff;font-family:'M PLUS Rounded 1c',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;color:var(--sub);}
+.grade-btn:hover{border-color:var(--sky);color:var(--sky);}
+.grade-btn.active{background:var(--sky);border-color:var(--sky);color:#fff;box-shadow:0 2px 8px rgba(41,182,246,.4);}
+
+/* ---- tabs ---- */
+.tabs{display:flex;gap:5px;padding:14px 18px 0;flex-wrap:wrap;max-width:860px;margin:0 auto;}
+.tab-btn{padding:8px 16px;border:none;border-radius:12px 12px 0 0;font-family:'M PLUS Rounded 1c',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;background:#ddd;color:#999;transition:all .2s;}
+.tab-btn.active{background:#fff;color:var(--text);box-shadow:0 -2px 8px rgba(0,0,0,.08);}
+
+/* ---- main ---- */
+main{padding:0 18px 60px;max-width:860px;margin:0 auto;}
+.panel{background:#fff;border-radius:0 var(--r) var(--r) var(--r);box-shadow:var(--sh);padding:24px;}
+
+/* ---- set header ---- */
+.set-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;}
+.set-icon{font-size:2rem;flex-shrink:0;}
+.set-title{font-family:'Kaisei Decol',serif;font-size:1.1rem;color:#0d47a1;line-height:1.3;}
+.set-desc{font-size:.83rem;color:var(--sub);margin-top:3px;}
+
+/* ---- table ---- */
+.tbl-wrap{overflow-x:auto;margin:14px 0;}
+.dtbl{border-collapse:collapse;width:100%;font-size:.95rem;}
+.dtbl th{background:linear-gradient(135deg,#29b6f6,#0288d1);color:#fff;padding:8px 12px;font-weight:800;text-align:center;border:2px solid #0277bd;}
+.dtbl td{border:2px solid #e0e0e0;padding:7px 12px;text-align:center;font-weight:700;background:#fff;}
+.dtbl .rh{background:linear-gradient(135deg,#fff8e1,#ffecb3);color:#e65100;font-weight:800;}
+.dtbl .tot{background:#fffde7;color:#f57f17;}
+.dtbl tr:hover td{background:#f0faff;}
+
+/* ---- chart ---- */
+.chart-wrap{background:#f9fafb;border-radius:12px;padding:14px;margin:14px 0;border:2px solid #e4e9f0;display:flex;justify-content:center;overflow-x:auto;}
+canvas{max-width:100%;display:block;}
+
+/* ---- question card ---- */
+.q-card{border-radius:14px;padding:16px 20px;margin-bottom:16px;border-left:5px solid var(--sky);background:linear-gradient(135deg,#e3f2fd,#f3e5f5);}
+.q-badge{display:inline-flex;align-items:center;gap:6px;background:var(--sky);color:#fff;font-size:.72rem;font-weight:800;padding:3px 11px;border-radius:16px;margin-bottom:8px;}
+.q-type-tag{font-size:.65rem;background:rgba(255,255,255,.35);padding:1px 6px;border-radius:8px;}
+.q-text{font-size:1rem;font-weight:700;line-height:1.9;}
+
+/* ---- options ---- */
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:14px 0;}
+@media(max-width:500px){.opts{grid-template-columns:1fr;}}
+.opt{padding:11px 13px;border:2.5px solid #ddd;border-radius:13px;background:#fff;font-family:'M PLUS Rounded 1c',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;text-align:left;line-height:1.5;transition:all .18s;display:flex;align-items:flex-start;gap:9px;color:var(--text);width:100%;}
+.opt:hover:not(.dis){border-color:var(--sky);background:#e3f2fd;transform:translateY(-2px);}
+.opt-lbl{min-width:26px;height:26px;border-radius:50%;background:#e8e8e8;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;flex-shrink:0;transition:all .18s;}
+.opt:hover:not(.dis) .opt-lbl{background:var(--sky);color:#fff;}
+.opt.cor{border-color:var(--grass);background:var(--grassL);}
+.opt.cor .opt-lbl{background:var(--grass);color:#fff;}
+.opt.wrg{border-color:var(--coral);background:var(--coralL);}
+.opt.wrg .opt-lbl{background:var(--coral);color:#fff;}
+.opt.dis{pointer-events:none;opacity:.72;}
+
+/* ---- number input ---- */
+.num-row{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin:12px 0;}
+.num-in{width:105px;padding:9px 10px;border:2.5px solid #ddd;border-radius:11px;font-family:'M PLUS Rounded 1c',sans-serif;font-size:1.25rem;font-weight:800;text-align:center;outline:none;transition:border-color .2s;color:var(--text);}
+.num-in:focus{border-color:var(--sky);box-shadow:0 0 0 3px rgba(41,182,246,.18);}
+.num-in.ci{border-color:var(--grass);background:var(--grassL);}
+.num-in.wi{border-color:var(--coral);background:var(--coralL);}
+.unit{font-size:.95rem;font-weight:700;color:var(--sub);}
+
+/* ---- buttons ---- */
+.btn-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center;}
+.btn-ans{padding:11px 26px;border:none;border-radius:26px;background:linear-gradient(135deg,#29b6f6,#0288d1);color:#fff;font-family:'M PLUS Rounded 1c',sans-serif;font-size:.93rem;font-weight:800;cursor:pointer;box-shadow:0 3px 12px rgba(2,136,209,.3);transition:all .2s;}
+.btn-ans:hover{transform:translateY(-2px);box-shadow:0 5px 16px rgba(2,136,209,.4);}
+.btn-ans:disabled{opacity:.45;pointer-events:none;}
+.btn-next{padding:11px 26px;border:none;border-radius:26px;background:linear-gradient(135deg,#66bb6a,#388e3c);color:#fff;font-family:'M PLUS Rounded 1c',sans-serif;font-size:.93rem;font-weight:800;cursor:pointer;box-shadow:0 3px 12px rgba(56,142,60,.3);transition:all .2s;display:none;}
+.btn-next:hover{transform:translateY(-2px);}
+.btn-next.show{display:block;}
+.btn-hint{padding:8px 16px;border:2px solid #ab47bc;border-radius:20px;background:#fff;color:#ab47bc;font-family:'M PLUS Rounded 1c',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-hint:hover{background:#f3e5f5;}
+.btn-hint:disabled{opacity:.4;pointer-events:none;}
+
+/* ---- hint box ---- */
+.hint-box{background:#f3e5f5;border:2px solid #ce93d8;border-radius:12px;padding:10px 14px;margin-top:10px;font-size:.85rem;font-weight:700;color:#6a1b9a;display:none;animation:popIn .25s ease;}
+.hint-box.show{display:block;}
+
+/* ---- feedback ---- */
+.fb{border-radius:13px;padding:12px 15px;margin-top:11px;font-weight:700;font-size:.92rem;display:none;align-items:flex-start;gap:9px;line-height:1.7;animation:popIn .3s ease;}
+@keyframes popIn{from{opacity:0;transform:scale(.95) translateY(5px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.fb.ok{display:flex;background:var(--grassL);border:2px solid var(--grass);color:#2e7d32;}
+.fb.ng{display:flex;background:var(--coralL);border:2px solid var(--coral);color:#bf360c;}
+.fb-icon{font-size:1.4rem;flex-shrink:0;}
+.fb-combo{font-size:.8rem;font-weight:800;color:#ff8f00;background:#fff8e1;padding:2px 8px;border-radius:10px;margin-left:6px;}
+
+/* ---- progress ---- */
+.prog-row{display:flex;justify-content:space-between;font-size:.76rem;color:var(--sub);margin-bottom:4px;font-weight:700;}
+.prog-track{background:#e0e0e0;border-radius:8px;height:9px;margin-bottom:16px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,#29b6f6,#66bb6a);border-radius:8px;transition:width .4s ease;}
+
+/* ---- score screen ---- */
+.score-screen{text-align:center;padding:24px 16px;}
+.score-big{font-size:3.5rem;font-weight:800;color:#1565c0;line-height:1;}
+.score-sub2{font-size:1rem;color:var(--sub);margin:6px 0 20px;}
+.grade-msg{font-size:1.3rem;font-weight:800;margin-bottom:6px;}
+.medals-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:14px 0;}
+.medal{font-size:2.2rem;animation:bounce .6s ease infinite alternate;}
+@keyframes bounce{from{transform:translateY(0);}to{transform:translateY(-8px);}}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:320px;margin:16px auto;}
+.stat-cell{background:#f0f8ff;border-radius:12px;padding:12px 10px;font-size:.85rem;font-weight:700;}
+.stat-cell strong{display:block;font-size:1.4rem;color:#1565c0;}
+.retry-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px;}
+.btn-retry{padding:12px 28px;border:none;border-radius:26px;background:linear-gradient(135deg,#29b6f6,#0288d1);color:#fff;font-family:'M PLUS Rounded 1c',sans-serif;font-size:.97rem;font-weight:800;cursor:pointer;box-shadow:0 3px 12px rgba(2,136,209,.3);transition:all .2s;}
+.btn-retry:hover{transform:translateY(-2px);}
+.btn-shuffle{padding:12px 28px;border:none;border-radius:26px;background:linear-gradient(135deg,#ab47bc,#7b1fa2);color:#fff;font-family:'M PLUS Rounded 1c',sans-serif;font-size:.97rem;font-weight:800;cursor:pointer;box-shadow:0 3px 12px rgba(123,31,162,.3);transition:all .2s;}
+.btn-shuffle:hover{transform:translateY(-2px);}
+
+/* ---- combo toast ---- */
+.combo-toast{position:fixed;top:80px;right:20px;background:linear-gradient(135deg,#ff8f00,#fdd835);color:#fff;font-weight:800;font-size:1.1rem;padding:10px 20px;border-radius:20px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:1000;opacity:0;transform:translateX(60px);transition:all .3s;pointer-events:none;}
+.combo-toast.show{opacity:1;transform:translateX(0);}
+
+/* ---- stars ---- */
+.stars-c{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1000;display:none;}
+.star{position:absolute;font-size:1.4rem;animation:sFly 1.3s ease-out forwards;}
+@keyframes sFly{0%{opacity:1;transform:translateY(0) scale(1) rotate(0);}100%{opacity:0;transform:translateY(-130px) scale(1.9) rotate(400deg);}}
+
+/* ---- level up ---- */
+.levelup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:linear-gradient(135deg,#ab47bc,#1565c0);color:#fff;padding:24px 36px;border-radius:24px;text-align:center;z-index:1100;box-shadow:0 8px 40px rgba(0,0,0,.35);transition:transform .4s cubic-bezier(.34,1.56,.64,1);}
+.levelup.show{transform:translate(-50%,-50%) scale(1);}
+.levelup h2{font-size:1.8rem;font-weight:800;}
+.levelup p{opacity:.85;font-size:.9rem;margin-top:4px;}
+
+ruby rt{font-size:.58em;color:#888;}
+@media(max-width:600px){.panel{padding:14px 11px;}.q-text{font-size:.95rem;}}
+
+/* ---- キャラクター ---- */
+.chara-wrap{position:fixed;bottom:18px;right:16px;z-index:500;display:flex;flex-direction:column;align-items:flex-end;gap:6px;pointer-events:none;}
+.chara-bubble{background:#fff;border:2.5px solid #29b6f6;border-radius:16px 16px 4px 16px;padding:8px 13px;font-size:.82rem;font-weight:700;color:#1a2a3a;max-width:170px;line-height:1.5;box-shadow:0 3px 12px rgba(0,0,0,.13);opacity:0;transform:translateY(8px);transition:all .35s;pointer-events:none;}
+.chara-bubble.show{opacity:1;transform:translateY(0);}
+.chara-face{font-size:2.8rem;filter:drop-shadow(0 3px 6px rgba(0,0,0,.18));transition:transform .3s;cursor:pointer;pointer-events:all;}
+.chara-face:hover{transform:scale(1.12);}
+.chara-face.bounce{animation:cBounce .4s ease;}
+@keyframes cBounce{0%{transform:scale(1)}40%{transform:scale(1.25)}70%{transform:scale(.92)}100%{transform:scale(1)}}
+
+/* ---- スタンプカード ---- */
+.stamp-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1200;display:none;align-items:center;justify-content:center;}
+.stamp-modal.open{display:flex;}
+.stamp-box{background:#fff;border-radius:24px;padding:26px 22px;max-width:420px;width:92%;box-shadow:0 10px 40px rgba(0,0,0,.3);animation:popIn .35s ease;}
+.stamp-box h2{font-family:'Kaisei Decol',serif;font-size:1.2rem;color:#0d47a1;margin-bottom:4px;}
+.stamp-box p{font-size:.8rem;color:var(--sub);margin-bottom:16px;}
+.stamp-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px;}
+.stamp-cell{aspect-ratio:1;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.6rem;border:2.5px dashed #ccc;background:#f5f5f5;transition:all .3s;position:relative;}
+.stamp-cell.earned{background:linear-gradient(135deg,#fff9c4,#fff3e0);border:2.5px solid #ffd600;box-shadow:0 2px 8px rgba(255,214,0,.35);}
+.stamp-cell.earned::after{content:attr(data-label);position:absolute;bottom:3px;font-size:.5rem;font-weight:800;color:#e65100;white-space:nowrap;}
+.stamp-cell .s-icon{font-size:1.5rem;filter:grayscale(1);opacity:.3;transition:all .4s;}
+.stamp-cell.earned .s-icon{filter:none;opacity:1;animation:stampPop .5s ease;}
+@keyframes stampPop{0%{transform:scale(0) rotate(-20deg);}60%{transform:scale(1.3) rotate(5deg);}100%{transform:scale(1) rotate(0);}}
+.stamp-close{padding:10px 28px;border:none;border-radius:20px;background:linear-gradient(135deg,#29b6f6,#0288d1);color:#fff;font-family:'M PLUS Rounded 1c',sans-serif;font-size:.93rem;font-weight:800;cursor:pointer;width:100%;}
+.stamp-new-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:linear-gradient(135deg,#ffd600,#ff8f00);color:#fff;padding:18px 28px;border-radius:20px;z-index:1300;text-align:center;font-weight:800;font-size:1.1rem;box-shadow:0 6px 24px rgba(0,0,0,.3);transition:transform .4s cubic-bezier(.34,1.56,.64,1);}
+.stamp-new-toast.show{transform:translate(-50%,-50%) scale(1);}
+
+/* ---- まちがいノート ---- */
+.note-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;display:none;align-items:flex-start;justify-content:center;padding:20px 12px;overflow-y:auto;}
+.note-modal.open{display:flex;}
+.note-box{background:#fff;border-radius:22px;padding:22px 18px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.28);animation:popIn .3s ease;}
+.note-box h2{font-family:'Kaisei Decol',serif;font-size:1.15rem;color:#c62828;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.note-item{background:#fff8f8;border:2px solid #ffcdd2;border-radius:14px;padding:13px 14px;margin-bottom:10px;position:relative;}
+.note-item-head{font-size:.78rem;font-weight:800;color:#e57373;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;}
+.note-q{font-size:.9rem;font-weight:700;line-height:1.7;margin-bottom:6px;}
+.note-exp{font-size:.8rem;color:#5d4037;background:#fff3e0;border-radius:8px;padding:7px 10px;line-height:1.6;}
+.note-retry-btn{padding:5px 14px;border:none;border-radius:14px;background:linear-gradient(135deg,#ff7043,#e64a19);color:#fff;font-family:'M PLUS Rounded 1c',sans-serif;font-size:.78rem;font-weight:800;cursor:pointer;}
+.note-empty{text-align:center;padding:30px;color:var(--sub);font-size:.95rem;}
+.note-close{padding:10px 28px;border:none;border-radius:20px;background:#f5f5f5;color:var(--text);font-family:'M PLUS Rounded 1c',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;width:100%;margin-top:6px;}
+
+/* ---- コツカード ---- */
+.tips-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;display:none;align-items:flex-start;justify-content:center;padding:20px 12px;overflow-y:auto;}
+.tips-modal.open{display:flex;}
+.tips-box{background:#fff;border-radius:22px;padding:22px 18px;max-width:580px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.28);animation:popIn .3s ease;}
+.tips-box h2{font-family:'Kaisei Decol',serif;font-size:1.15rem;color:#0d47a1;margin-bottom:14px;}
+.tips-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.tips-tab{padding:6px 14px;border:2px solid #ddd;border-radius:16px;background:#fff;font-family:'M PLUS Rounded 1c',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;color:var(--sub);transition:all .2s;}
+.tips-tab.active{background:var(--sky);border-color:var(--sky);color:#fff;}
+.tips-content{display:none;}
+.tips-content.show{display:block;}
+.tip-card{background:linear-gradient(135deg,#e3f2fd,#f0fff4);border:2px solid #b3e5fc;border-radius:14px;padding:13px 15px;margin-bottom:10px;}
+.tip-card h3{font-size:.9rem;font-weight:800;color:#01579b;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.tip-card p{font-size:.83rem;line-height:1.75;color:#1a2a3a;}
+.tip-card .tip-ex{background:#fff;border-radius:8px;padding:6px 10px;margin-top:7px;font-size:.8rem;color:#555;border-left:3px solid #29b6f6;}
+.tips-close{padding:10px 28px;border:none;border-radius:20px;background:#f5f5f5;color:var(--text);font-family:'M PLUS Rounded 1c',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;width:100%;margin-top:6px;}
+
+/* ---- フローティングボタン群 ---- */
+.fab-group{position:fixed;bottom:20px;left:16px;z-index:490;display:flex;flex-direction:column;gap:9px;}
+.fab{width:48px;height:48px;border-radius:50%;border:none;font-size:1.3rem;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.22);transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.fab:hover{transform:scale(1.12);}
+.fab-note{background:linear-gradient(135deg,#ff7043,#e64a19);}
+.fab-tips{background:linear-gradient(135deg,#ab47bc,#7b1fa2);}
+.fab-stamp{background:linear-gradient(135deg,#ffd600,#ff8f00);}
+.fab-badge{position:absolute;top:-4px;right:-4px;background:#f44336;color:#fff;font-size:.55rem;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+
+/* ---- スタンプ新着通知 ---- */
+.stamp-new-toast p{font-size:.85rem;opacity:.9;margin-top:4px;}
+
+/* ---- セーブ通知 ---- */
+.save-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:#1b5e20;color:#fff;font-size:.82rem;font-weight:700;padding:8px 20px;border-radius:20px;z-index:2000;opacity:0;transition:all .35s;pointer-events:none;white-space:nowrap;}
+.save-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ---- データ管理モーダル ---- */
+.data-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;display:none;align-items:center;justify-content:center;}
+.data-modal.open{display:flex;}
+.data-box{background:#fff;border-radius:22px;padding:26px 22px;max-width:400px;width:92%;box-shadow:0 10px 40px rgba(0,0,0,.28);animation:popIn .3s ease;}
+.data-box h2{font-family:'Kaisei Decol',serif;font-size:1.1rem;color:#0d47a1;margin-bottom:6px;}
+.data-box p{font-size:.82rem;color:var(--sub);margin-bottom:18px;line-height:1.6;}
+.data-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;}
+.data-stat-cell{background:#f0f8ff;border-radius:12px;padding:10px;font-size:.82rem;font-weight:700;text-align:center;}
+.data-stat-cell strong{display:block;font-size:1.3rem;color:#1565c0;}
+.btn-data-close{padding:10px 20px;border:none;border-radius:16px;background:#e3f2fd;color:#1565c0;font-family:'M PLUS Rounded 1c',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;width:100%;margin-bottom:8px;}
+.btn-data-reset{padding:10px 20px;border:2px solid #ef5350;border-radius:16px;background:#fff;color:#ef5350;font-family:'M PLUS Rounded 1c',sans-serif;font-size:.85rem;font-weight:800;cursor:pointer;width:100%;}
+.btn-data-reset:hover{background:#fbe9e7;}
+</style>
+</head>
+<body>
+
+<div class="stars-c" id="starsC"></div>
+<div class="combo-toast" id="comboToast"></div>
+<div class="save-toast" id="saveToast">💾 データをほぞんしました！</div>
+
+<!-- データ管理モーダル -->
+<div class="data-modal" id="dataModal">
+  <div class="data-box">
+    <h2>💾 データかんり</h2>
+    <p>がめんをとじても、<ruby>学習<rt>がくしゅう</rt></ruby>のきろくは<ruby>自動的<rt>じどうてき</rt></ruby>にほぞんされます。</p>
+    <div class="data-stat-grid" id="dataStat"></div>
+    <button class="btn-data-close" onclick="closeDataModal()">とじる</button>
+    <button class="btn-data-reset" onclick="confirmReset()">🗑️ データをリセットする</button>
+  </div>
+</div>
+<div class="levelup" id="levelupBox"><h2 id="levelupTxt"></h2><p id="levelupSub"></p></div>
+<div class="stamp-new-toast" id="stampNewToast"><div id="stampNewIcon" style="font-size:2.2rem"></div><div id="stampNewTxt"></div><p id="stampNewSub"></p></div>
+
+<!-- キャラクター -->
+<div class="chara-wrap" id="charaWrap">
+  <div class="chara-bubble" id="charaBubble">こんにちは！いっしょにがんばろう！</div>
+  <div class="chara-face" id="charaFace" onclick="toggleBubble()">🦉</div>
+</div>
+
+<!-- フローティングボタン -->
+<div class="fab-group">
+  <div style="position:relative">
+    <button class="fab fab-note" onclick="openNote()" title="まちがいノート">📝</button>
+    <span class="fab-badge" id="noteBadge" style="display:none">0</span>
+  </div>
+  <button class="fab fab-tips" onclick="openTips()" title="コツカード">💡</button>
+  <button class="fab fab-stamp" onclick="openStamp()" title="スタンプカード">🏅</button>
+  <button class="fab" style="background:linear-gradient(135deg,#43a047,#1b5e20);" onclick="openDataModal()" title="データかんり">💾</button>
+</div>
+
+<!-- スタンプカードモーダル -->
+<div class="stamp-modal" id="stampModal">
+  <div class="stamp-box">
+    <h2>🏅 スタンプカード</h2>
+    <p id="stampProgress">0 / 10 バッジかくとく</p>
+    <div class="stamp-grid" id="stampGrid"></div>
+    <button class="stamp-close" onclick="closeStamp()">とじる</button>
+  </div>
+</div>
+
+<!-- まちがいノートモーダル -->
+<div class="note-modal" id="noteModal">
+  <div class="note-box">
+    <h2>📝 まちがいノート</h2>
+    <div id="noteList"></div>
+    <button class="note-close" onclick="closeNote()">とじる</button>
+  </div>
+</div>
+
+<!-- コツカードモーダル -->
+<div class="tips-modal" id="tipsModal">
+  <div class="tips-box">
+    <h2>💡 グラフ・<ruby>表<rt>ひょう</rt></ruby>の<ruby>読<rt>よ</rt></ruby>み方コツカード</h2>
+    <div class="tips-tabs" id="tipsTabs"></div>
+    <div id="tipsBody"></div>
+    <button class="tips-close" onclick="closeTips()">とじる</button>
+  </div>
+</div>
+
+<header>
+  <span class="logo-wrap">📊</span>
+  <h1>グラフ・<ruby>表<rt>ひょう</rt></ruby> れんしゅう
+    <small>小学3〜6年生むけ 算数学習アプリ</small>
+  </h1>
+</header>
+
+<div class="top-bar">
+  <div class="streak-badge" id="streakBadge">🔥 0 れんぞく</div>
+  <div class="xp-bar-wrap">
+    <div class="xp-label"><span>Lv.<span id="lvNum">1</span> <span id="lvName">みならい</span></span><span id="xpLabel">0 / 50 XP</span></div>
+    <div class="xp-track"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+  </div>
+  <div class="total-score-disp">🏆 <span id="totalScore">0</span> pt</div>
+</div>
+
+<div class="grade-bar">
+  <label><ruby>学年<rt>がくねん</rt></ruby>：</label>
+  <button class="grade-btn" data-grade="3" onclick="setGrade(3)">3年生</button>
+  <button class="grade-btn active" data-grade="4" onclick="setGrade(4)">4年生</button>
+  <button class="grade-btn" data-grade="5" onclick="setGrade(5)">5年生</button>
+  <button class="grade-btn" data-grade="6" onclick="setGrade(6)">6年生</button>
+</div>
+
+<div class="tabs" id="tabsC"></div>
+<main><div class="panel" id="panel"></div></main>
+
+<script>
+// =====================================================================
+// ゲーム状態
+// =====================================================================
+let totalScore=0, xp=0, combo=0, maxCombo=0, streak=0;
+let hintUsed=false;
+const XP_TABLE=[0,50,120,220,360,550,800,1100,1500,2000];
+const LV_NAMES=['みならい','けんきゅうせい','グラフはかせ','データたんてい','さんすうマスター','グランドマスター!'];
+
+// =====================================================================
+// localStorage 保存・復元
+// =====================================================================
+const SAVE_KEY='graphApp_save_v1';
+let saveTimer=null;
+
+function saveData(){
+  // まちがいノートは set オブジェクトを title+tH のキー情報だけ保存
+  const mistakeKeys=mistakeLog.map(m=>({key:m.key}));
+  const payload={
+    totalScore, xp,
+    totalAnswered, totalCorrect,
+    earnedStamps:[...earnedStamps],
+    mistakeKeys,
+    savedAt: Date.now(),
+  };
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+    showSaveToast();
+  }catch(e){ console.warn('save failed',e); }
+}
+
+function loadData(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw) return;
+    const d=JSON.parse(raw);
+    totalScore  = d.totalScore  || 0;
+    xp          = d.xp          || 0;
+    totalAnswered=d.totalAnswered|| 0;
+    totalCorrect= d.totalCorrect || 0;
+    earnedStamps= new Set(d.earnedStamps || []);
+    // まちがいノートは key だけ復元（セット・問題オブジェクトは DB から再検索）
+    const savedKeys=(d.mistakeKeys||[]).map(m=>m.key);
+    mistakeLog=[];
+    savedKeys.forEach(key=>{
+      const [title, tH]=key.split('||');
+      // DB から該当セット・問題を検索
+      for(const cat of Object.values(DB)){
+        for(const set of cat){
+          if(set.title===title){
+            const q=set.qs.find(qq=>qq.tH===tH);
+            if(q){ mistakeLog.push({key, set, q}); break; }
+          }
+        }
+      }
+    });
+  }catch(e){ console.warn('load failed',e); }
+}
+
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(saveData, 800);  // 0.8秒後に保存（連続呼び出し対策）
+}
+
+function showSaveToast(){
+  const t=document.getElementById('saveToast');
+  if(!t) return;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+// データ管理モーダル
+function openDataModal(){
+  const grid=document.getElementById('dataStat');
+  if(grid){
+    const savedAt=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}').savedAt;
+    const dateStr=savedAt ? new Date(savedAt).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : 'なし';
+    grid.innerHTML=`
+      <div class="data-stat-cell"><strong>${totalScore}</strong>合計pt</div>
+      <div class="data-stat-cell"><strong>Lv.${getLv()}</strong>${getLvName()}</div>
+      <div class="data-stat-cell"><strong>${totalAnswered}</strong>回答数</div>
+      <div class="data-stat-cell"><strong>${totalCorrect}</strong>正解数</div>
+      <div class="data-stat-cell"><strong>${earnedStamps.size}</strong>バッジ数</div>
+      <div class="data-stat-cell"><strong>${mistakeLog.length}</strong>まちがい</div>
+      <div class="data-stat-cell" style="grid-column:span 2;font-size:.72rem;color:var(--sub);">
+        最終ほぞん：${dateStr}</div>`;
+  }
+  document.getElementById('dataModal').classList.add('open');
+}
+function closeDataModal(){ document.getElementById('dataModal').classList.remove('open'); }
+
+function confirmReset(){
+  if(confirm('ほんとうにリセットしますか？\nすべてのきろくが消えます。')){
+    localStorage.removeItem(SAVE_KEY);
+    totalScore=0; xp=0; combo=0; maxCombo=0; streak=0;
+    totalAnswered=0; totalCorrect=0;
+    earnedStamps=new Set();
+    mistakeLog=[];
+    updateTopBar();
+    updateNoteBadge();
+    renderStampGrid();
+    closeDataModal();
+    showSaveToast();
+    document.getElementById('saveToast').textContent='🗑️ データをリセットしました';
+    setTimeout(()=>{ document.getElementById('saveToast').textContent='💾 データをほぞんしました！'; },2500);
+    showCharaMsg('idle');
+  }
+}
+
+// =====================================================================
+// キャラクター「グラフくん」
+// =====================================================================
+// =====================================================================
+// キャラクターデータ（12種類、セッション開始時にランダム選択）
+// =====================================================================
+const CHARACTERS=[
+  {face:'🦉', name:'フクロウ先生',  color:'#6d4c41',
+   idle:['さあ、はじめよう！','じっくり考えてね🦉','グラフをよく見てみよう！','ゆっくりでいいんだよ。'],
+   correct:['ホホッ、正解！⭐','さすがだ！🦉','よく読めたね！','完璧だよ！🎉'],
+   wrong:['惜しい！もう一度🦉','ヒントを使ってみよう💡','見直してみよう🔍','次はきっとできる！'],
+   hint:['ヒントだよ！よく見てね🦉','一緒に考えよう！','これでわかるかな？'],
+   combo3:['3れんぞく！すごい！🦉','止まらないね！'],
+   combo5:['5れんぞく！天才だ！🦉⚡','ホホッ、無敵だ！'],
+   levelup:['レベルアップ！成長してるよ🦉','どんどん賢くなってる！']},
+  {face:'🐼', name:'パンダくん',    color:'#37474f',
+   idle:['いっしょにがんばろう！🐼','グラフ、楽しいよ！','ゆっくりやれば大丈夫🐼','まちがっても大丈夫！'],
+   correct:['やったー！🐼⭐','せいかい！すごいね！','パーフェクト！🎉','その調子！🐼'],
+   wrong:['おしい！🐼もう一回！','ヒント使ってみよう💡','次はできるよ！🐼','もう一度よく見て！'],
+   hint:['ヒントだよ🐼いっしょに！','これを見れば分かるよ！','ヒント活用しよう🐼'],
+   combo3:['3れんぞく！🐼🔥','どんどんいこう！'],
+   combo5:['5れんぞく！🐼⚡すごすぎ！','もはや無敵だー！'],
+   levelup:['レベルアップ🐼🎊','どんどん強くなってる！']},
+  {face:'🦊', name:'キツネさん',    color:'#e65100',
+   idle:['こんにちは！🦊','グラフを読み解こう！','焦らなくていいよ🦊','一緒に解こう！'],
+   correct:['やるじゃん！🦊⭐','正解！頭いい！','かっこいい！🎉','完璧な答えだ🦊'],
+   wrong:['むむ…惜しい🦊','ヒントが助けてくれるよ💡','次こそ正解しよう🦊','見直してみよう！'],
+   hint:['ヒントを活用しよう🦊','これで解けるはず！','一緒に考えよう🦊'],
+   combo3:['3れんぞく！🦊🔥かっこいい！','止まらない！'],
+   combo5:['5れんぞく！🦊⚡天才！','無敵モード突入！'],
+   levelup:['レベルアップ🦊🎊！','どんどん成長してる！']},
+  {face:'🐸', name:'カエルくん',    color:'#2e7d32',
+   idle:['けろけろ！一緒にやろう🐸','グラフ楽しいよ！','ゆっくりやろう🐸','まちがいは勉強だよ！'],
+   correct:['けろけろ正解！🐸⭐','やったー！すごい！','かんぺき！🎉','いい調子だよ🐸'],
+   wrong:['けろ…惜しい🐸','ヒント使おう💡','次はできるよ🐸','もう一回挑戦！'],
+   hint:['ヒントだよ🐸','これを見てみよう！','いっしょに考えよう🐸'],
+   combo3:['3れんぞく！🐸🔥すごい！','ノリノリだね！'],
+   combo5:['5れんぞく！🐸⚡最高！','けろけろ無敵！'],
+   levelup:['レベルアップ🐸🎊！','どんどん伸びてる！']},
+  {face:'🐱', name:'ネコちゃん',    color:'#795548',
+   idle:['にゃ～一緒にがんばろう🐱','グラフ、得意だよ！','ゆっくりでいいにゃ🐱','まちがっても大丈夫にゃ！'],
+   correct:['にゃ！正解！🐱⭐','すごいにゃ！','かんぺきにゃ！🎉','その調子にゃ🐱'],
+   wrong:['惜しいにゃ…🐱','ヒントを使ってにゃ💡','次こそにゃ！🐱','もう一度見てにゃ！'],
+   hint:['ヒントだにゃ🐱','これで分かるにゃ！','いっしょに考えるにゃ🐱'],
+   combo3:['3れんぞく！にゃ🔥！','止まらないにゃ！'],
+   combo5:['5れんぞく！🐱⚡天才にゃ！','無敵にゃ！'],
+   levelup:['レベルアップにゃ🎊！','どんどん賢くなってるにゃ！']},
+  {face:'🐻', name:'クマさん',      color:'#4e342e',
+   idle:['うー、一緒にがんばろう🐻','グラフは面白いよ！','焦らなくていいぞ🐻','まちがいは成長だよ！'],
+   correct:['うおー！正解！🐻⭐','すごいぞ！','完璧だ！🎉','その調子だ🐻'],
+   wrong:['惜しかったぞ🐻','ヒントを使ってみよう💡','次こそできるぞ🐻','もう一度チャレンジ！'],
+   hint:['ヒントだよ🐻','これを参考にしよう！','一緒に解こう🐻'],
+   combo3:['3れんぞく！🐻🔥すごいぞ！','どんどんいけ！'],
+   combo5:['5れんぞく！🐻⚡最強だ！','うおー無敵！'],
+   levelup:['レベルアップ🐻🎊！','どんどん強くなってるぞ！']},
+  {face:'🐧', name:'ペンギンちゃん', color:'#1a237e',
+   idle:['よちよち、一緒にやろう🐧','グラフ大好き！','ゆっくりやろうね🐧','失敗しても大丈夫！'],
+   correct:['よちよち正解！🐧⭐','すごいすごい！','パーフェクト！🎉','よかったね🐧'],
+   wrong:['惜しかった🐧','ヒント使ってみよう💡','次はできるよ🐧','もう一度やってみよう！'],
+   hint:['ヒントだよ🐧','これを見てね！','いっしょに考えよう🐧'],
+   combo3:['3れんぞく！🐧🔥えらい！','どんどんいこう！'],
+   combo5:['5れんぞく！🐧⚡天才！','よちよち無敵！'],
+   levelup:['レベルアップ🐧🎊！','どんどん伸びてるね！']},
+  {face:'🦁', name:'ライオン王',    color:'#f57f17',
+   idle:['ガオー！いっしょにやるぞ🦁','グラフを征服しよう！','堂々とやれ🦁','失敗を恐れるな！'],
+   correct:['ガオー！正解！🦁⭐','王者の答えだ！','完璧だ！🎉','さすがだ🦁'],
+   wrong:['王者も惜しいことがある🦁','ヒントを使え💡','必ず正解できる🦁','もう一度挑め！'],
+   hint:['ヒントだ🦁使え！','これが鍵だ！','一緒に解こう🦁'],
+   combo3:['3れんぞく！🦁🔥さすが！','止めるな！'],
+   combo5:['5れんぞく！🦁⚡王者！','ガオー！無敵！'],
+   levelup:['レベルアップ🦁🎊！','どんどん強くなってるぞ！']},
+  {face:'🐹', name:'ハムスターん',  color:'#d84315',
+   idle:['もぐもぐ、一緒にやろう🐹','グラフって楽しい！','ゆっくりやろうよ🐹','失敗は練習だよ！'],
+   correct:['もぐもぐ正解！🐹⭐','えらい！すごい！','かんぺき！🎉','その調子🐹！'],
+   wrong:['惜しい！もぐもぐ🐹','ヒント使おう💡','次はできるよ🐹','もう一回！'],
+   hint:['ヒントだよ🐹もぐもぐ','これで分かるよ！','一緒に考えよう🐹'],
+   combo3:['3れんぞく！🐹🔥もぐもぐ！','止まらない！'],
+   combo5:['5れんぞく！🐹⚡すごすぎ！','もぐもぐ無敵！'],
+   levelup:['レベルアップ🐹🎊もぐもぐ！','どんどん伸びてる！']},
+  {face:'🦋', name:'チョウチョさん', color:'#6a1b9a',
+   idle:['ひらひら、いっしょにやろう🦋','グラフって美しい！','ゆっくりやろうね🦋','まちがいも美しい！'],
+   correct:['ひらひら正解！🦋⭐','きれいな答え！','パーフェクト！🎉','すてき🦋'],
+   wrong:['惜しい🦋ひらひら','ヒントを活用しよう💡','次はできるよ🦋','もう一度挑戦！'],
+   hint:['ヒントだよ🦋','これを見てね！','一緒に考えよう🦋'],
+   combo3:['3れんぞく！🦋🔥きれい！','止まらないね！'],
+   combo5:['5れんぞく！🦋⚡天才！','ひらひら無敵！'],
+   levelup:['レベルアップ🦋🎊！','どんどん羽ばたいてる！']},
+  {face:'🐬', name:'イルカちゃん',  color:'#006064',
+   idle:['イェーイ！一緒にやろう🐬','グラフ大好き！','ゆったりやろうよ🐬','失敗してもOK！'],
+   correct:['イェーイ正解！🐬⭐','最高だよ！','かんぺき！🎉','その調子🐬！'],
+   wrong:['惜しい🐬！もう一回！','ヒント使ってみよう💡','次こそ！🐬','もう一度やってみよう！'],
+   hint:['ヒントだよ🐬','これ参考にしよう！','一緒に考えよう🐬'],
+   combo3:['3れんぞく！🐬🔥最高！','ノリノリだね！'],
+   combo5:['5れんぞく！🐬⚡天才！','イェーイ無敵！'],
+   levelup:['レベルアップ🐬🎊！','どんどん伸びてる！']},
+  {face:'🦄', name:'ユニコーン様',  color:'#880e4f',
+   idle:['きらきら、いっしょにやろう✨🦄','グラフって魔法みたい！','ゆっくりやってね🦄✨','まちがいは魔法の練習！'],
+   correct:['きらきら正解！🦄⭐✨','魔法みたいな答え！','かんぺき！🎉✨','すごすぎ🦄！'],
+   wrong:['惜しい🦄✨もう一回！','ヒントという魔法を使おう💡','次こそ魔法を！🦄','もう一度見直そう！'],
+   hint:['ヒントという魔法だよ🦄✨','これが魔法の鍵！','一緒に魔法をかけよう🦄'],
+   combo3:['3れんぞく！🦄✨🔥魔法！','止まらない魔法！'],
+   combo5:['5れんぞく！🦄⚡✨無敵の魔法！','きらきら天才！'],
+   levelup:['レベルアップ🦄🎊✨！','どんどん魔法が強くなってる！']},
+];
+
+let currentChara=CHARACTERS[0];
+let bubbleTimer=null;
+
+function pickRandomChara(){
+  currentChara=CHARACTERS[Math.floor(Math.random()*CHARACTERS.length)];
+  const face=document.getElementById('charaFace');
+  if(face){
+    face.textContent=currentChara.face;
+    face.style.filter='drop-shadow(0 3px 8px '+currentChara.color+'55)';
+  }
+}
+
+function showCharaMsg(type){
+  const msgs=currentChara[type]||currentChara.idle;
+  const msg=msgs[Math.floor(Math.random()*msgs.length)];
+  const face=document.getElementById('charaFace');
+  const bubble=document.getElementById('charaBubble');
+  bubble.textContent=msg;
+  bubble.classList.add('show');
+  face.classList.add('bounce');
+  setTimeout(()=>face.classList.remove('bounce'),400);
+  clearTimeout(bubbleTimer);
+  bubbleTimer=setTimeout(()=>bubble.classList.remove('show'),3200);
+}
+function toggleBubble(){
+  const b=document.getElementById('charaBubble');
+  if(b.classList.contains('show')){b.classList.remove('show');}
+  else{showCharaMsg('idle');}
+}
+
+// =====================================================================
+// スタンプカード
+// =====================================================================
+const STAMPS=[
+  {id:'q5',   icon:'🌱', label:'5もんクリア！',   need:5,  type:'total'},
+  {id:'q15',  icon:'🌿', label:'15もんクリア！',  need:15, type:'total'},
+  {id:'q30',  icon:'🌳', label:'30もんクリア！',  need:30, type:'total'},
+  {id:'q50',  icon:'🌲', label:'50もんクリア！',  need:50, type:'total'},
+  {id:'cor10',icon:'⭐', label:'10もんせいかい！', need:10, type:'correct'},
+  {id:'cor25',icon:'🌟', label:'25もんせいかい！', need:25, type:'correct'},
+  {id:'cor50',icon:'🏆', label:'50もんせいかい！', need:50, type:'correct'},
+  {id:'cmb3', icon:'🔥', label:'3れんぞく！',      need:3,  type:'combo'},
+  {id:'cmb5', icon:'⚡', label:'5れんぞく！',      need:5,  type:'combo'},
+  {id:'nohint',icon:'💎',label:'ノーヒントクリア！',need:1, type:'nohint'},
+];
+let earnedStamps=new Set();
+let totalAnswered=0, totalCorrect=0, nohintSession=true;
+
+function checkStamps(isCorrect, currentCombo){
+  if(isCorrect) totalCorrect++;
+  totalAnswered++;
+
+  const checks=[
+    {id:'q5',   val:totalAnswered, need:5},
+    {id:'q15',  val:totalAnswered, need:15},
+    {id:'q30',  val:totalAnswered, need:30},
+    {id:'q50',  val:totalAnswered, need:50},
+    {id:'cor10',val:totalCorrect,  need:10},
+    {id:'cor25',val:totalCorrect,  need:25},
+    {id:'cor50',val:totalCorrect,  need:50},
+    {id:'cmb3', val:currentCombo,  need:3},
+    {id:'cmb5', val:currentCombo,  need:5},
+  ];
+  checks.forEach(c=>{
+    if(!earnedStamps.has(c.id) && c.val>=c.need){
+      earnedStamps.add(c.id);
+      const s=STAMPS.find(x=>x.id===c.id);
+      if(s) showStampNew(s);
+    }
+  });
+}
+function checkNohintStamp(){
+  if(nohintSession && !earnedStamps.has('nohint')){
+    earnedStamps.add('nohint');
+    showStampNew(STAMPS.find(s=>s.id==='nohint'));
+  }
+}
+function showStampNew(s){
+  const t=document.getElementById('stampNewToast');
+  document.getElementById('stampNewIcon').textContent=s.icon;
+  document.getElementById('stampNewTxt').textContent='バッジかくとく！';
+  document.getElementById('stampNewSub').textContent=s.label;
+  t.classList.add('show');
+  renderStampGrid();
+  updateNoteBadge();
+  showCharaMsg('levelup');
+  fireStars(12);
+  saveData();  // バッジ取得は即保存
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+function renderStampGrid(){
+  const grid=document.getElementById('stampGrid');
+  if(!grid)return;
+  grid.innerHTML=STAMPS.map(s=>`
+    <div class="stamp-cell ${earnedStamps.has(s.id)?'earned':''}" data-label="${s.label}">
+      <span class="s-icon">${s.icon}</span>
+    </div>`).join('');
+  document.getElementById('stampProgress').textContent=earnedStamps.size+' / '+STAMPS.length+' バッジかくとく';
+}
+function openStamp(){renderStampGrid();document.getElementById('stampModal').classList.add('open');}
+function closeStamp(){document.getElementById('stampModal').classList.remove('open');}
+
+// =====================================================================
+// まちがいノート
+// =====================================================================
+let mistakeLog=[];  // {set, q} のオブジェクト配列（重複除去用にtitleとqTextで管理）
+
+function addMistake(setObj, qObj){
+  const key=setObj.title+'||'+qObj.tH;
+  if(!mistakeLog.find(m=>m.key===key)){
+    mistakeLog.push({key, set:setObj, q:qObj});
+  }
+  updateNoteBadge();
+}
+function removeMistake(key){
+  mistakeLog=mistakeLog.filter(m=>m.key!==key);
+  updateNoteBadge();
+  renderNoteList();
+}
+function updateNoteBadge(){
+  const b=document.getElementById('noteBadge');
+  if(!b)return;
+  b.style.display=mistakeLog.length>0?'flex':'none';
+  b.textContent=mistakeLog.length;
+}
+function renderNoteList(){
+  const list=document.getElementById('noteList');
+  if(!list)return;
+  if(mistakeLog.length===0){
+    list.innerHTML='<div class="note-empty">まちがいはありません！<br>すごい！✨</div>';
+    return;
+  }
+  list.innerHTML=mistakeLog.map((m,i)=>`
+    <div class="note-item" id="ni_${i}">
+      <div class="note-item-head">
+        <span>📊 ${m.set.titleH}</span>
+        <button class="note-retry-btn" onclick="retryMistake('${m.key.replace(/'/g,"\\'")}')">もう一度</button>
+      </div>
+      <div class="note-q">${m.q.tH}</div>
+      <div class="note-exp">💡 ${m.q.expH||'解説なし'}</div>
+    </div>`).join('');
+}
+function retryMistake(key){
+  const m=mistakeLog.find(x=>x.key===key);
+  if(!m)return;
+  closeNote();
+  allQList=[{set:m.set, q:m.q, id:m.key}];
+  sessionPage=0;
+  startPage();
+}
+function openNote(){renderNoteList();document.getElementById('noteModal').classList.add('open');}
+function closeNote(){document.getElementById('noteModal').classList.remove('open');}
+
+// =====================================================================
+// コツカード
+// =====================================================================
+const TIPS_DATA=[
+  {id:'bar', label:'📊 棒グラフ', items:[
+    {title:'① 棒の高さ＝数の大きさ',
+     body:'棒が高いほど数が大きいよ。目もりをたどって棒の頂上の数字を読もう。',
+     ex:'例：棒が15のところまで伸びていたら→答えは15'},
+    {title:'② 一番多い・少ないを見つけよう',
+     body:'全部の棒の高さを見くらべて、一番高い棒と一番低い棒に注目しよう。',
+     ex:'例：棒が「12、8、15、6、9」なら→最大は15、最小は6'},
+    {title:'③ 差を求めるには引き算',
+     body:'2本の棒の差（ちがい）を求めるには、大きい方から小さい方を引こう。',
+     ex:'例：りんご12人、みかん8人の差→12－8＝4人'},
+    {title:'④ 合計は全部たす',
+     body:'「〇〇と〇〇を合わせると何人？」は全部の数を足し算しよう。',
+     ex:'例：12＋8＝20人'},
+  ]},
+  {id:'line', label:'📈 折れ線グラフ', items:[
+    {title:'① 点の高さ＝その時の数',
+     body:'折れ線グラフの点（•）の高さを目もりで読もう。',
+     ex:'例：14時の点が27のところ→気温は27℃'},
+    {title:'② 上がり・下がりに注目',
+     body:'線が右上がりなら「増えている」、右下がりなら「減っている」よ。',
+     ex:'例：線が14時を境に下がっている→14時が最高'},
+    {title:'③ 変化の大きさは差で比べる',
+     body:'2つの点の差（引き算）で、どの区間が一番大きく変化したかわかるよ。',
+     ex:'例：10℃→15℃で＋5℃、15℃→20℃で＋5℃→同じ変化量'},
+    {title:'④ 2本の線があるとき',
+     body:'色や形に注目して、どちらの線かを確認してから読もう。凡例（はんれい）を忘れずに！',
+     ex:'例：赤い線がA市、青い線がB市のデータ'},
+  ]},
+  {id:'pie', label:'🥧 円グラフ', items:[
+    {title:'① 面積（扇形の大きさ）＝割合',
+     body:'大きいかたまり（扇形）ほど割合が大きいよ。ラベルの数字（%）を確認しよう。',
+     ex:'例：「睡眠 38%」→全体の38%が睡眠'},
+    {title:'② 合計はいつも100%',
+     body:'円グラフの全部の%を足すと必ず100になるよ。わからない部分は引き算で求められる。',
+     ex:'例：残り全部の%が100から引いた数になる'},
+    {title:'③ 2つ合わせる・比べる',
+     body:'「〇〇と〇〇を合わせると」は%同士を足し算しよう。',
+     ex:'例：学校33%＋勉強8%＝41%'},
+    {title:'④ 「半分」「3分の1」を目安に',
+     body:'50%＝半分、33%≒3分の1と覚えておくと読みやすいよ。',
+     ex:'例：38%は33%（1/3）より大きいので「3分の1以上」'},
+  ]},
+  {id:'table', label:'📋 表', items:[
+    {title:'① 行と列が交わるところを読む',
+     body:'「〇〇の〇〇は？」という問題は、行（横の並び）と列（縦の並び）をたどって交わるマスを読もう。',
+     ex:'例：「運動場のすりきず」→「運動場」の行×「すりきず」の列'},
+    {title:'② 合計の行・列を確認',
+     body:'表の右端や下の行に「合計」があることが多い。まずここを見ると全体がわかるよ。',
+     ex:'例：合計の列が最大の行が「一番多い場所」'},
+    {title:'③ 2つのデータを比べる',
+     body:'同じ行や列の数字を比べると「どちらが多い？」がわかるよ。',
+     ex:'例：男子12人 vs 女子8人→男子の方が多い'},
+    {title:'④ 差・合計の計算',
+     body:'表を使って計算するときも、足し算・引き算を正確に。単位（人、件、mmなど）も忘れずに！',
+     ex:'例：3月160mm－1月45mm＝115mm（差）'},
+  ]},
+  {id:'combo', label:'🔀 複合グラフ', items:[
+    {title:'① 2種類のグラフを区別する',
+     body:'棒グラフと折れ線グラフが1つになっているよ。凡例（はんれい）を見て、どちらが何を表しているか確認しよう。',
+     ex:'例：青い棒＝降水量、赤い折れ線＝気温'},
+    {title:'② 左の目もり・右の目もり',
+     body:'左の縦軸（目もり）は棒グラフ用、右の縦軸は折れ線グラフ用であることが多いよ。',
+     ex:'例：左軸0〜200（mm）、右軸0〜30（℃）'},
+    {title:'③ 2つの変化を一緒に読む',
+     body:'棒が高いとき折れ線も高い？同じ月でどちらも増えているか確認しよう。',
+     ex:'例：7〜8月に棒も折れ線も高い→気温が高い月は降水量も多い傾向'},
+    {title:'④ 最大・最小は別々に探す',
+     body:'棒の最大と折れ線の最大が同じ月とは限らないよ。それぞれ別々に確認しよう。',
+     ex:'例：棒の最大は7月、折れ線の最大は8月→別々の月'},
+  ]},
+];
+
+function openTips(catId){
+  const modal=document.getElementById('tipsModal');
+  const tabsEl=document.getElementById('tipsTabs');
+  const bodyEl=document.getElementById('tipsBody');
+  const cats=GRADE_CATS[grade];
+  const activeCat=catId||(cats.includes(cat)?cat:cats[0]);
+
+  tabsEl.innerHTML=cats.map(c=>{
+    const t=TIPS_DATA.find(x=>x.id===c);
+    if(!t)return '';
+    return `<button class="tips-tab ${c===activeCat?'active':''}" onclick="openTips('${c}')">${t.label}</button>`;
+  }).join('');
+
+  const tipData=TIPS_DATA.find(x=>x.id===activeCat);
+  bodyEl.innerHTML=tipData?tipData.items.map(item=>`
+    <div class="tip-card">
+      <h3>📌 ${item.title}</h3>
+      <p>${item.body}</p>
+      <div class="tip-ex">${item.ex}</div>
+    </div>`).join(''):'<p>このカテゴリのコツはまだ準備中です。</p>';
+
+  modal.classList.add('open');
+}
+function closeTips(){document.getElementById('tipsModal').classList.remove('open');}
+
+// モーダル外クリックで閉じる
+['stampModal','noteModal','tipsModal','dataModal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){
+    if(e.target===this) this.classList.remove('open');
+  });
+});
+
+function getLv(){for(let i=XP_TABLE.length-1;i>=0;i--){if(xp>=XP_TABLE[i])return i+1;}return 1;}
+function getNextXP(){const lv=getLv();return XP_TABLE[Math.min(lv,XP_TABLE.length-1)]||9999;}
+function getLvName(){const lv=getLv();return LV_NAMES[Math.min(lv-1,LV_NAMES.length-1)];}
+
+function addXP(pt){
+  const oldLv=getLv();
+  xp+=pt; totalScore+=pt;
+  const newLv=getLv();
+  updateTopBar();
+  if(newLv>oldLv) showLevelUp(newLv);
+  scheduleSave();  // XP変化のたびに保存予約
+}
+
+function updateTopBar(){
+  document.getElementById('streakBadge').textContent='🔥 '+streak+' れんぞく';
+  const lv=getLv(), next=getNextXP(), prev=XP_TABLE[Math.min(lv-1,XP_TABLE.length-1)];
+  const pct=Math.min(100,Math.round((xp-prev)/(next-prev)*100));
+  document.getElementById('lvNum').textContent=lv;
+  document.getElementById('lvName').textContent=getLvName();
+  document.getElementById('xpLabel').textContent=xp+' / '+next+' XP';
+  document.getElementById('xpFill').style.width=pct+'%';
+  document.getElementById('totalScore').textContent=totalScore;
+}
+
+function showLevelUp(lv){
+  const box=document.getElementById('levelupBox');
+  document.getElementById('levelupTxt').textContent='🎉 レベル '+lv+' アップ！';
+  document.getElementById('levelupSub').textContent='「'+getLvName()+'」になりました！';
+  box.classList.add('show');
+  fireStars(30);
+  setTimeout(()=>box.classList.remove('show'),2600);
+}
+
+// =====================================================================
+// カテゴリ定義
+// =====================================================================
+const CATS={
+  bar:  {icon:'📊',label:'<ruby>棒<rt>ぼう</rt></ruby>グラフ'},
+  line: {icon:'📈',label:'<ruby>折<rt>お</rt></ruby>れ<ruby>線<rt>せん</rt></ruby>グラフ'},
+  pie:  {icon:'🥧',label:'<ruby>円<rt>えん</rt></ruby>グラフ'},
+  table:{icon:'📋',label:'<ruby>表<rt>ひょう</rt></ruby>'},
+  combo:{icon:'🔀',label:'<ruby>複合<rt>ふくごう</rt></ruby>グラフ'},
+};
+const GRADE_CATS={3:['bar','table'],4:['bar','line','table'],5:['bar','line','pie','table'],6:['bar','line','pie','table','combo']};
+
+// =====================================================================
+// 問題データベース
+// type: 'read'=数値入力, 'choice'=選択肢, 'analyze'=読み取り分析
+// optHTML: プレーンキー→HTML表示マップ（省略可）
+// hintHTML: ヒント文
+// =====================================================================
+const DB={
+
+// ======================== 棒グラフ ========================
+bar:[
+  {grade:3,title:'好きな果物しらべ',titleH:'<ruby>好<rt>す</rt></ruby>きな<ruby>果物<rt>くだもの</rt></ruby>しらべ',
+   descH:'クラスの<ruby>児童<rt>じどう</rt></ruby>が<ruby>好<rt>す</rt></ruby>きな<ruby>果物<rt>くだもの</rt></ruby>を<ruby>調<rt>しら</rt></ruby>べました。',
+   chartType:'bar',labels:['りんご','みかん','いちご','ぶどう','バナナ'],values:[12,8,15,6,9],unit:'人',
+   colorSet:['#ff8a65','#ffd54f','#f48fb1','#ce93d8','#a5d6a7'],
+   qs:[
+    {type:'read',tH:'いちごが<ruby>好<rt>す</rt></ruby>きな<ruby>人<rt>にん</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:15,unit:'人',
+     hint:'いちごの<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',
+     expH:'いちごの<ruby>棒<rt>ぼう</rt></ruby>は15<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'choice',tH:'<ruby>一番多<rt>いちばんおお</rt></ruby>い<ruby>果物<rt>くだもの</rt></ruby>はどれですか？',
+     opts:['りんご','みかん','いちご','バナナ'],ans:'いちご',
+     hint:'一番<ruby>高<rt>たか</rt></ruby>い<ruby>棒<rt>ぼう</rt></ruby>を<ruby>探<rt>さが</rt></ruby>しましょう。',
+     expH:'いちごが15<ruby>人<rt>にん</rt></ruby>で一番多いです。'},
+    {type:'read',tH:'りんごとみかんをあわせると<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:20,unit:'人',
+     hint:'りんご12<ruby>人<rt>にん</rt></ruby>＋みかん8<ruby>人<rt>にん</rt></ruby>を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',
+     expH:'12＋8＝20<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['りんごはみかんより4人多い','ぶどうはバナナより多い','みかんとバナナで17人になる','全体で50人が答えた'],
+     oh:{'りんごはみかんより4人多い':'りんごはみかんより4<ruby>人<rt>にん</rt></ruby>多い','ぶどうはバナナより多い':'ぶどうはバナナより多い','みかんとバナナで17人になる':'みかんとバナナで17<ruby>人<rt>にん</rt></ruby>になる','全体で50人が答えた':'<ruby>全体<rt>ぜんたい</rt></ruby>で50<ruby>人<rt>にん</rt></ruby>が<ruby>答<rt>こた</rt></ruby>えた'},
+     ans:'りんごはみかんより4人多い',hint:'12－8を<ruby>計算<rt>けいさん</rt></ruby>してみましょう。',
+     expH:'12－8＝4<ruby>人<rt>にん</rt></ruby>です。みかん8＋バナナ9＝17なので③も<ruby>正<rt>ただ</rt></ruby>しいように見えますが、選択肢は「みかんとバナナで17人」と正確なので①が最も明確な正解です。'},
+    {type:'read',tH:'ぶどうといちごのちがいは<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:9,unit:'人',
+     hint:'15－6を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'15－6＝9<ruby>人<rt>にん</rt></ruby>です。'},
+   ]},
+  {grade:3,title:'好きなスポーツしらべ',titleH:'<ruby>好<rt>す</rt></ruby>きなスポーツしらべ',
+   descH:'3年1<ruby>組<rt>くみ</rt></ruby>の<ruby>児童<rt>じどう</rt></ruby>が<ruby>好<rt>す</rt></ruby>きなスポーツを<ruby>調<rt>しら</rt></ruby>べました。',
+   chartType:'bar',labels:['サッカー','水泳','野球','バスケ','なわとび'],values:[14,10,8,11,7],unit:'人',
+   colorSet:['#42a5f5','#26c6da','#ef5350','#ff7043','#ab47bc'],
+   qs:[
+    {type:'read',tH:'サッカーが<ruby>好<rt>す</rt></ruby>きな<ruby>人<rt>にん</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:14,unit:'人',
+     hint:'サッカーの<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'サッカーは14<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'choice',tH:'<ruby>一番少<rt>いちばんすく</rt></ruby>ないスポーツはどれですか？',
+     opts:['水泳','野球','バスケ','なわとび'],ans:'なわとび',
+     hint:'<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さが一番<ruby>低<rt>ひく</rt></ruby>いものを<ruby>探<rt>さが</rt></ruby>しましょう。',expH:'なわとびが7<ruby>人<rt>にん</rt></ruby>で一番少ないです。'},
+    {type:'read',tH:'バスケが<ruby>好<rt>す</rt></ruby>きな<ruby>人<rt>にん</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:11,unit:'人',
+     hint:'バスケの<ruby>棒<rt>ぼう</rt></ruby>を<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'バスケは11<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'read',tH:'サッカーとなわとびのちがいは<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:7,unit:'人',
+     hint:'14－7を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'14－7＝7<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['水泳は野球より多い','バスケはなわとびの2倍より少ない','サッカーが一番多い','全体で50人が答えた'],
+     oh:{'水泳は野球より多い':'<ruby>水泳<rt>すいえい</rt></ruby>は<ruby>野球<rt>やきゅう</rt></ruby>より多い','バスケはなわとびの2倍より少ない':'バスケはなわとびの2<ruby>倍<rt>ばい</rt></ruby>より少ない','サッカーが一番多い':'サッカーが一番多い','全体で50人が答えた':'<ruby>全体<rt>ぜんたい</rt></ruby>で50<ruby>人<rt>にん</rt></ruby>が<ruby>答<rt>こた</rt></ruby>えた'},
+     ans:'サッカーが一番多い',
+     hint:'<ruby>棒<rt>ぼう</rt></ruby>が一番<ruby>高<rt>たか</rt></ruby>いものを<ruby>確認<rt>かくにん</rt></ruby>しましょう。',expH:'サッカー14<ruby>人<rt>にん</rt></ruby>が最多です。水泳10＞野球8なので①も<ruby>正<rt>ただ</rt></ruby>しい！バスケ11＝なわとび7の約1.57倍で2倍未満なので②も正しいです。'},
+   ]},
+  {grade:3,title:'好きな動物しらべ',titleH:'<ruby>好<rt>す</rt></ruby>きな<ruby>動物<rt>どうぶつ</rt></ruby>しらべ',
+   descH:'クラスで<ruby>好<rt>す</rt></ruby>きな<ruby>動物<rt>どうぶつ</rt></ruby>を<ruby>調<rt>しら</rt></ruby>べました。',
+   chartType:'bar',labels:['イヌ','ネコ','うさぎ','ハムスター','とり'],values:[16,13,7,5,9],unit:'人',
+   colorSet:['#a1887f','#ce93d8','#f48fb1','#ffcc02','#81c784'],
+   qs:[
+    {type:'read',tH:'ネコが<ruby>好<rt>す</rt></ruby>きな<ruby>人<rt>にん</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:13,unit:'人',
+     hint:'ネコの<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'ネコは13<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'choice',tH:'イヌとネコを<ruby>合<rt>あ</rt></ruby>わせると<ruby>何人<rt>なんにん</rt></ruby>ですか？',
+     opts:['27人','28人','29人','30人'],ans:'29人',
+     hint:'16＋13を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'16＋13＝29<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'read',tH:'うさぎとハムスターを<ruby>合<rt>あ</rt></ruby>わせると<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:12,unit:'人',
+     hint:'7＋5を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'7＋5＝12<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'read',tH:'<ruby>全部<rt>ぜんぶ</rt></ruby>で<ruby>何人<rt>なんにん</rt></ruby>が<ruby>答<rt>こた</rt></ruby>えましたか？',ans:50,unit:'人',
+     hint:'16+13+7+5+9を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'16+13+7+5+9＝50<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['ハムスターが一番少ない','とりはうさぎより少ない','イヌはネコの2倍以上','ネコとうさぎを合わせると20人'],
+     oh:{'ハムスターが一番少ない':'ハムスターが一番少ない','とりはうさぎより少ない':'とりはうさぎより少ない','イヌはネコの2倍以上':'イヌはネコの2<ruby>倍以上<rt>ばいいじょう</rt></ruby>','ネコとうさぎを合わせると20人':'ネコとうさぎを<ruby>合<rt>あ</rt></ruby>わせると20<ruby>人<rt>にん</rt></ruby>'},
+     ans:'ハムスターが一番少ない',
+     hint:'<ruby>棒<rt>ぼう</rt></ruby>が一番<ruby>低<rt>ひく</rt></ruby>いものを<ruby>探<rt>さが</rt></ruby>しましょう。',expH:'ハムスター5<ruby>人<rt>にん</rt></ruby>が最小です。とり9＞うさぎ7なので②は<ruby>誤<rt>あやま</rt></ruby>り。イヌ16÷ネコ13≒1.23倍で2倍未満なので③も誤りです。'},
+   ]},
+  {grade:3,title:'好きな色しらべ',titleH:'<ruby>好<rt>す</rt></ruby>きな<ruby>色<rt>いろ</rt></ruby>しらべ',
+   descH:'クラスの<ruby>みんな<rt></rt></ruby>が<ruby>好<rt>す</rt></ruby>きな<ruby>色<rt>いろ</rt></ruby>を<ruby>調<rt>しら</rt></ruby>べました。',
+   chartType:'bar',labels:['あか','あお','きいろ','みどり','むらさき'],values:[11,15,6,9,9],unit:'人',
+   colorSet:['#ef5350','#42a5f5','#fdd835','#66bb6a','#ab47bc'],
+   qs:[
+    {type:'read',tH:'あおが<ruby>好<rt>す</rt></ruby>きな<ruby>人<rt>にん</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:15,unit:'人',
+     hint:'あおの<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'あおは15<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'choice',tH:'<ruby>一番多<rt>いちばんおお</rt></ruby>い<ruby>色<rt>いろ</rt></ruby>はどれですか？',
+     opts:['あか','あお','きいろ','みどり'],ans:'あお',
+     hint:'<ruby>棒<rt>ぼう</rt></ruby>が一番<ruby>高<rt>たか</rt></ruby>いものを<ruby>探<rt>さが</rt></ruby>しましょう。',expH:'あおが15<ruby>人<rt>にん</rt></ruby>で一番多いです。'},
+    {type:'read',tH:'みどりとむらさきを<ruby>合<rt>あ</rt></ruby>わせると<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:18,unit:'人',
+     hint:'9＋9を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'9＋9＝18<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'read',tH:'あおときいろのちがいは<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:9,unit:'人',
+     hint:'15－6を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'15－6＝9<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['みどりとむらさきの人数は同じ','あかはきいろの2倍より少ない','全体は50人','あおはあかより4人多い'],
+     oh:{'みどりとむらさきの人数は同じ':'みどりとむらさきの<ruby>人数<rt>にんずう</rt></ruby>は<ruby>同<rt>おな</rt></ruby>じ','あかはきいろの2倍より少ない':'あかはきいろの2<ruby>倍<rt>ばい</rt></ruby>より少ない','全体は50人':'<ruby>全体<rt>ぜんたい</rt></ruby>は50<ruby>人<rt>にん</rt></ruby>','あおはあかより4人多い':'あおはあかより4<ruby>人<rt>にん</rt></ruby>多い'},
+     ans:'みどりとむらさきの人数は同じ',
+     hint:'みどり9<ruby>人<rt>にん</rt></ruby>とむらさき9<ruby>人<rt>にん</rt></ruby>を<ruby>比<rt>くら</rt></ruby>べましょう。',expH:'みどり9＝むらさき9で同じです。あか11÷きいろ6≒1.83倍で2倍未満なので②も正しい！あお15－あか11＝4人なので④も正しい！全体は11+15+6+9+9=50人なので③も正しいです。'},
+   ]},
+  {grade:3,title:'好きな教科しらべ',titleH:'<ruby>好<rt>す</rt></ruby>きな<ruby>教科<rt>きょうか</rt></ruby>しらべ',
+   descH:'3年2<ruby>組<rt>くみ</rt></ruby>の<ruby>みんな<rt></rt></ruby>が<ruby>好<rt>す</rt></ruby>きな<ruby>教科<rt>きょうか</rt></ruby>を<ruby>答<rt>こた</rt></ruby>えました。',
+   chartType:'bar',labels:['さんすう','こくご','たいいく','ずこう','りか'],values:[13,8,17,11,6],unit:'人',
+   colorSet:['#ffd600','#ef5350','#42a5f5','#ff7043','#66bb6a'],
+   qs:[
+    {type:'read',tH:'たいいくが<ruby>好<rt>す</rt></ruby>きな<ruby>人<rt>にん</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:17,unit:'人',
+     hint:'たいいくの<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'たいいくは17<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'choice',tH:'2<ruby>番目<rt>ばんめ</rt></ruby>に<ruby>好<rt>す</rt></ruby>きな<ruby>人<rt>にん</rt></ruby>が<ruby>多<rt>おお</rt></ruby>い<ruby>教科<rt>きょうか</rt></ruby>はどれですか？',
+     opts:['さんすう','こくご','ずこう','りか'],ans:'さんすう',
+     hint:'たいいく17、さんすう13、ずこう11の<ruby>順<rt>じゅん</rt></ruby>です。',expH:'たいいく17<ruby>人<rt>にん</rt></ruby>の<ruby>次<rt>つぎ</rt></ruby>はさんすう13<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'read',tH:'さんすうとこくごのちがいは<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:5,unit:'人',
+     hint:'13－8を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'13－8＝5<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'read',tH:'ずこうとりかを<ruby>合<rt>あ</rt></ruby>わせると<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:17,unit:'人',
+     hint:'11＋6を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'11＋6＝17<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['りかが一番少ない','こくごはずこうより多い','たいいくとずこうを合わせると30人より少ない','さんすうはりかの2倍以上'],
+     oh:{'りかが一番少ない':'りかが一番少ない','こくごはずこうより多い':'こくごはずこうより多い','たいいくとずこうを合わせると30人より少ない':'たいいくとずこうを<ruby>合<rt>あ</rt></ruby>わせると30<ruby>人<rt>にん</rt></ruby>より少ない','さんすうはりかの2倍以上':'さんすうはりかの2<ruby>倍以上<rt>ばいいじょう</rt></ruby>'},
+     ans:'りかが一番少ない',
+     hint:'<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さが一番<ruby>低<rt>ひく</rt></ruby>いものを<ruby>確認<rt>かくにん</rt></ruby>しましょう。',expH:'りか6<ruby>人<rt>にん</rt></ruby>が最小です。こくご8＜ずこう11なので②は誤り。たいいく17＋ずこう11＝28人で30人未満なので③は正しい！さんすう13÷りか6≒2.17倍で2倍以上なので④も正しいです。'},
+   ]},
+  {grade:3,title:'1か月の天気しらべ',titleH:'1か<ruby>月<rt>げつ</rt></ruby>の<ruby>天気<rt>てんき</rt></ruby>しらべ',
+   descH:'ある<ruby>月<rt>つき</rt></ruby>の30<ruby>日間<rt>にちかん</rt></ruby>の<ruby>天気<rt>てんき</rt></ruby>を<ruby>記録<rt>きろく</rt></ruby>しました。',
+   chartType:'bar',labels:['はれ','くもり','あめ','ゆき'],values:[18,7,4,1],unit:'日',
+   colorSet:['#ffd600','#90a4ae','#42a5f5','#80deea'],
+   qs:[
+    {type:'read',tH:'はれの<ruby>日<rt>ひ</rt></ruby>は<ruby>何日<rt>なんにち</rt></ruby>ですか？',ans:18,unit:'日',
+     hint:'はれの<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'はれは18<ruby>日<rt>にち</rt></ruby>です。'},
+    {type:'read',tH:'くもりとあめを<ruby>合<rt>あ</rt></ruby>わせると<ruby>何日<rt>なんにち</rt></ruby>ですか？',ans:11,unit:'日',
+     hint:'7＋4を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'7＋4＝11<ruby>日<rt>にち</rt></ruby>です。'},
+    {type:'choice',tH:'<ruby>一番少<rt>いちばんすく</rt></ruby>ない<ruby>天気<rt>てんき</rt></ruby>はどれですか？',
+     opts:['くもり','あめ','ゆき','はれ'],ans:'ゆき',
+     hint:'<ruby>棒<rt>ぼう</rt></ruby>が一番<ruby>低<rt>ひく</rt></ruby>いものを<ruby>探<rt>さが</rt></ruby>しましょう。',expH:'ゆきは1<ruby>日<rt>にち</rt></ruby>で一番少ないです。'},
+    {type:'read',tH:'はれとくもりのちがいは<ruby>何日<rt>なんにち</rt></ruby>ですか？',ans:11,unit:'日',
+     hint:'18－7を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'18－7＝11<ruby>日<rt>にち</rt></ruby>です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['はれが全体の半分以上','くもりはあめの2倍より少ない','全体は30日','ゆきとあめを合わせると5日'],
+     oh:{'はれが全体の半分以上':'はれが<ruby>全体<rt>ぜんたい</rt></ruby>の<ruby>半分以上<rt>はんぶんいじょう</rt></ruby>','くもりはあめの2倍より少ない':'くもりはあめの2<ruby>倍<rt>ばい</rt></ruby>より少ない','全体は30日':'<ruby>全体<rt>ぜんたい</rt></ruby>は30<ruby>日<rt>にち</rt></ruby>','ゆきとあめを合わせると5日':'ゆきとあめを<ruby>合<rt>あ</rt></ruby>わせると5<ruby>日<rt>にち</rt></ruby>'},
+     ans:'はれが全体の半分以上',
+     hint:'18÷30で<ruby>半分<rt>はんぶん</rt></ruby>（15<ruby>日<rt>にち</rt></ruby>）より多いかを<ruby>確認<rt>かくにん</rt></ruby>しましょう。',expH:'はれ18日＞半分15日なので半分以上です。くもり7÷あめ4＝1.75倍で2倍未満なので②も正しい！全体18+7+4+1=30日なので③も正しい！ゆき1+あめ4=5日なので④も正しいです。'},
+   ]},
+  {grade:3,title:'好きな食べものしらべ',titleH:'<ruby>好<rt>す</rt></ruby>きな<ruby>食<rt>た</rt></ruby>べものしらべ',
+   descH:'クラスの<ruby>みんな<rt></rt></ruby>が<ruby>好<rt>す</rt></ruby>きな<ruby>食<rt>た</rt></ruby>べものを<ruby>答<rt>こた</rt></ruby>えました。',
+   chartType:'bar',labels:['カレー','ラーメン','すし','ハンバーグ','から揚げ'],values:[16,12,9,13,10],unit:'人',
+   colorSet:['#ffd600','#ef5350','#f48fb1','#ff7043','#42a5f5'],
+   qs:[
+    {type:'read',tH:'ハンバーグが<ruby>好<rt>す</rt></ruby>きな<ruby>人<rt>にん</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:13,unit:'人',
+     hint:'ハンバーグの<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'ハンバーグは13<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'choice',tH:'<ruby>一番多<rt>いちばんおお</rt></ruby>い<ruby>食<rt>た</rt></ruby>べものはどれですか？',
+     opts:['カレー','ラーメン','ハンバーグ','から揚げ'],ans:'カレー',
+     hint:'<ruby>棒<rt>ぼう</rt></ruby>が一番<ruby>高<rt>たか</rt></ruby>いものを<ruby>探<rt>さが</rt></ruby>しましょう。',expH:'カレーが16<ruby>人<rt>にん</rt></ruby>で一番多いです。'},
+    {type:'read',tH:'カレーとすしのちがいは<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:7,unit:'人',
+     hint:'16－9を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'16－9＝7<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'read',tH:'<ruby>全部<rt>ぜんぶ</rt></ruby>で<ruby>何人<rt>なんにん</rt></ruby>が<ruby>答<rt>こた</rt></ruby>えましたか？',ans:60,unit:'人',
+     hint:'16+12+9+13+10を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'16+12+9+13+10＝60<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['すしが一番少ない','ラーメンとから揚げを合わせると22人','カレーはすしの約2倍','ハンバーグはラーメンより少ない'],
+     oh:{'すしが一番少ない':'すしが一番少ない','ラーメンとから揚げを合わせると22人':'ラーメンとから<ruby>揚<rt>あ</rt></ruby>げを<ruby>合<rt>あ</rt></ruby>わせると22<ruby>人<rt>にん</rt></ruby>','カレーはすしの約2倍':'カレーはすしの<ruby>約<rt>やく</rt></ruby>2<ruby>倍<rt>ばい</rt></ruby>','ハンバーグはラーメンより少ない':'ハンバーグはラーメンより少ない'},
+     ans:'すしが一番少ない',
+     hint:'<ruby>棒<rt>ぼう</rt></ruby>が一番<ruby>低<rt>ひく</rt></ruby>いものを<ruby>確認<rt>かくにん</rt></ruby>しましょう。',expH:'すし9<ruby>人<rt>にん</rt></ruby>が最小です。ラーメン12＋から揚げ10＝22人なので②も正しい！カレー16÷すし9≒1.78倍で約2倍に近い。ハンバーグ13＞ラーメン12なので④は誤りです。'},
+   ]},
+  {grade:3,title:'学校のまわりの生き物しらべ',titleH:'<ruby>学校<rt>がっこう</rt></ruby>のまわりの<ruby>生<rt>い</rt></ruby>き<ruby>物<rt>もの</rt></ruby>しらべ',
+   descH:'<ruby>学校<rt>がっこう</rt></ruby>のまわりで<ruby>見<rt>み</rt></ruby>つけた<ruby>生<rt>い</rt></ruby>き<ruby>物<rt>もの</rt></ruby>の<ruby>数<rt>かず</rt></ruby>です。',
+   chartType:'bar',labels:['チョウ','バッタ','アリ','テントウムシ','ダンゴムシ'],values:[8,12,20,5,15],unit:'ひき',
+   colorSet:['#f48fb1','#66bb6a','#ef5350','#ff7043','#a1887f'],
+   qs:[
+    {type:'read',tH:'アリは<ruby>何<rt>なん</rt></ruby>びきいましたか？',ans:20,unit:'ひき',
+     hint:'アリの<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'アリは20<ruby>ひき<rt></rt></ruby>です。'},
+    {type:'choice',tH:'<ruby>一番少<rt>いちばんすく</rt></ruby>ない<ruby>生<rt>い</rt></ruby>き<ruby>物<rt>もの</rt></ruby>はどれですか？',
+     opts:['チョウ','バッタ','テントウムシ','ダンゴムシ'],ans:'テントウムシ',
+     hint:'<ruby>棒<rt>ぼう</rt></ruby>が一番<ruby>低<rt>ひく</rt></ruby>いものを<ruby>探<rt>さが</rt></ruby>しましょう。',expH:'テントウムシが5<ruby>ひき<rt></rt></ruby>で一番少ないです。'},
+    {type:'read',tH:'チョウとバッタのちがいは<ruby>何<rt>なん</rt></ruby>びきですか？',ans:4,unit:'ひき',
+     hint:'12－8を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'12－8＝4<ruby>ひき<rt></rt></ruby>です。'},
+    {type:'read',tH:'ダンゴムシとテントウムシを<ruby>合<rt>あ</rt></ruby>わせると<ruby>何<rt>なん</rt></ruby>びきですか？',ans:20,unit:'ひき',
+     hint:'15＋5を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'15＋5＝20<ruby>ひき<rt></rt></ruby>です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['アリが一番多い','ダンゴムシはバッタより多い','チョウとテントウムシを合わせると13ひき','全体で60ひきいた'],
+     oh:{'アリが一番多い':'アリが一番多い','ダンゴムシはバッタより多い':'ダンゴムシはバッタより多い','チョウとテントウムシを合わせると13ひき':'チョウとテントウムシを<ruby>合<rt>あ</rt></ruby>わせると13<ruby>ひき<rt></rt></ruby>','全体で60ひきいた':'<ruby>全体<rt>ぜんたい</rt></ruby>で60<ruby>ひき<rt></rt></ruby>いた'},
+     ans:'アリが一番多い',
+     hint:'<ruby>棒<rt>ぼう</rt></ruby>が一番<ruby>高<rt>たか</rt></ruby>いものを<ruby>確認<rt>かくにん</rt></ruby>しましょう。',expH:'アリ20<ruby>ひき<rt></rt></ruby>が最多です。ダンゴムシ15＞バッタ12なので②も正しい！チョウ8＋テントウムシ5＝13ひきなので③も正しい！全体8+12+20+5+15=60ひきなので④も正しいです。'},
+   ]},
+  {grade:3,title:'読んだ本の種類しらべ',titleH:'<ruby>読<rt>よ</rt></ruby>んだ<ruby>本<rt>ほん</rt></ruby>の<ruby>種類<rt>しゅるい</rt></ruby>しらべ',
+   descH:'<ruby>先月<rt>せんげつ</rt></ruby>、クラスの<ruby>みんな<rt></rt></ruby>が<ruby>読<rt>よ</rt></ruby>んだ<ruby>本<rt>ほん</rt></ruby>の<ruby>種類<rt>しゅるい</rt></ruby>を<ruby>調<rt>しら</rt></ruby>べました。',
+   chartType:'bar',labels:['ものがたり','かがく','れきし','図鑑','マンガ'],values:[22,10,7,8,13],unit:'さつ',
+   colorSet:['#ef5350','#42a5f5','#fdd835','#66bb6a','#ab47bc'],
+   qs:[
+    {type:'read',tH:'ものがたりは<ruby>何<rt>なん</rt></ruby>さつ<ruby>読<rt>よ</rt></ruby>まれましたか？',ans:22,unit:'さつ',
+     hint:'ものがたりの<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'ものがたりは22<ruby>さつ<rt></rt></ruby>です。'},
+    {type:'choice',tH:'マンガとれきしのちがいは<ruby>何<rt>なん</rt></ruby>さつですか？',
+     opts:['4さつ','5さつ','6さつ','7さつ'],ans:'6さつ',
+     hint:'13－7を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'13－7＝6<ruby>さつ<rt></rt></ruby>です。'},
+    {type:'read',tH:'かがくと<ruby>図鑑<rt>ずかん</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせると<ruby>何<rt>なん</rt></ruby>さつですか？',ans:18,unit:'さつ',
+     hint:'10＋8を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'10＋8＝18<ruby>さつ<rt></rt></ruby>です。'},
+    {type:'read',tH:'<ruby>全部<rt>ぜんぶ</rt></ruby>で<ruby>何<rt>なん</rt></ruby>さつ<ruby>読<rt>よ</rt></ruby>まれましたか？',ans:60,unit:'さつ',
+     hint:'22+10+7+8+13を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'22+10+7+8+13＝60<ruby>さつ<rt></rt></ruby>です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['れきしが一番少ない','ものがたりはマンガの2倍より少ない','図鑑とれきしを合わせると15さつ','ものがたりは全体の3分の1以上'],
+     oh:{'れきしが一番少ない':'れきしが一番少ない','ものがたりはマンガの2倍より少ない':'ものがたりはマンガの2<ruby>倍<rt>ばい</rt></ruby>より少ない','図鑑とれきしを合わせると15さつ':'<ruby>図鑑<rt>ずかん</rt></ruby>とれきしを<ruby>合<rt>あ</rt></ruby>わせると15<ruby>さつ<rt></rt></ruby>','ものがたりは全体の3分の1以上':'ものがたりは<ruby>全体<rt>ぜんたい</rt></ruby>の3<ruby>分<rt>ぶん</rt></ruby>の1<ruby>以上<rt>いじょう</rt></ruby>'},
+     ans:'ものがたりは全体の3分の1以上',
+     hint:'22÷60を<ruby>計算<rt>けいさん</rt></ruby>して、3<ruby>分<rt>ぶん</rt></ruby>の1（約20<ruby>さつ<rt></rt></ruby>）より多いかを<ruby>確認<rt>かくにん</rt></ruby>しましょう。',expH:'22÷60≒0.37で3分の1（0.33）以上です。れきし7＜図鑑8なのでれきしが最小で①も正しい！ものがたり22÷マンガ13≒1.69倍で2倍未満なので②も正しい！図鑑8＋れきし7＝15さつなので③も正しいです。'},
+   ]},
+  {grade:3,title:'えんそくで乗った乗り物しらべ',titleH:'えんそくで<ruby>乗<rt>の</rt></ruby>った<ruby>乗<rt>の</rt></ruby>り<ruby>物<rt>もの</rt></ruby>しらべ',
+   descH:'えんそくでどの<ruby>乗<rt>の</rt></ruby>り<ruby>物<rt>もの</rt></ruby>に<ruby>乗<rt>の</rt></ruby>ったかを<ruby>調<rt>しら</rt></ruby>べました。',
+   chartType:'bar',labels:['バス','電車','車','自転車','その他'],values:[25,18,8,3,6],unit:'人',
+   colorSet:['#ff7043','#42a5f5','#66bb6a','#fdd835','#ab47bc'],
+   qs:[
+    {type:'read',tH:'バスに<ruby>乗<rt>の</rt></ruby>った<ruby>人<rt>にん</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:25,unit:'人',
+     hint:'バスの<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'バスは25<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'read',tH:'バスと<ruby>電車<rt>でんしゃ</rt></ruby>のちがいは<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:7,unit:'人',
+     hint:'25－18を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'25－18＝7<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'choice',tH:'<ruby>一番少<rt>いちばんすく</rt></ruby>ない<ruby>乗<rt>の</rt></ruby>り<ruby>物<rt>もの</rt></ruby>はどれですか？',
+     opts:['バス','車','自転車','その他'],ans:'自転車',
+     hint:'<ruby>棒<rt>ぼう</rt></ruby>が一番<ruby>低<rt>ひく</rt></ruby>いものを<ruby>探<rt>さが</rt></ruby>しましょう。',expH:'<ruby>自転車<rt>じてんしゃ</rt></ruby>が3<ruby>人<rt>にん</rt></ruby>で一番少ないです。'},
+    {type:'read',tH:'<ruby>全部<rt>ぜんぶ</rt></ruby>で<ruby>何人<rt>なんにん</rt></ruby>が<ruby>答<rt>こた</rt></ruby>えましたか？',ans:60,unit:'人',
+     hint:'25+18+8+3+6を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'25+18+8+3+6＝60<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['バスが一番多い','車とその他を合わせると14人','電車はバスの半分以上','自転車はその他より多い'],
+     oh:{'バスが一番多い':'バスが一番多い','車とその他を合わせると14人':'<ruby>車<rt>くるま</rt></ruby>とその他を<ruby>合<rt>あ</rt></ruby>わせると14<ruby>人<rt>にん</rt></ruby>','電車はバスの半分以上':'<ruby>電車<rt>でんしゃ</rt></ruby>はバスの<ruby>半分以上<rt>はんぶんいじょう</rt></ruby>','自転車はその他より多い':'<ruby>自転車<rt>じてんしゃ</rt></ruby>はその他より多い'},
+     ans:'バスが一番多い',
+     hint:'<ruby>棒<rt>ぼう</rt></ruby>が一番<ruby>高<rt>たか</rt></ruby>いものを<ruby>確認<rt>かくにん</rt></ruby>しましょう。',expH:'バス25<ruby>人<rt>にん</rt></ruby>が最多です。車8＋その他6＝14人なので②も正しい！電車18＞バス25の半分12.5なので③も正しい！自転車3＜その他6なので④は誤りです。'},
+   ]},
+  {grade:4,title:'月別図書室利用者数',titleH:'<ruby>月別<rt>つきべつ</rt></ruby><ruby>図書室<rt>としょしつ</rt></ruby><ruby>利用者数<rt>りようしゃすう</rt></ruby>',
+   descH:'4月から9月の<ruby>図書室<rt>としょしつ</rt></ruby><ruby>利用者数<rt>りようしゃすう</rt></ruby>のグラフです。',
+   chartType:'bar',labels:['4月','5月','6月','7月','8月','9月'],values:[45,62,53,38,28,71],unit:'人',
+   colorSet:['#4fc3f7','#4dd0e1','#4db6ac','#29b6f6','#81d4fa','#0288d1'],
+   qs:[
+    {type:'read',tH:'9月の<ruby>利用者数<rt>りようしゃすう</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:71,unit:'人',
+     hint:'9月の<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'9月の<ruby>棒<rt>ぼう</rt></ruby>は71<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'choice',tH:'<ruby>利用者数<rt>りようしゃすう</rt></ruby>が一番少なかった<ruby>月<rt>つき</rt></ruby>はどれですか？',
+     opts:['4月','6月','7月','8月'],ans:'8月',
+     hint:'一番<ruby>低<rt>ひく</rt></ruby>い<ruby>棒<rt>ぼう</rt></ruby>を<ruby>探<rt>さが</rt></ruby>しましょう。',expH:'8月が28<ruby>人<rt>にん</rt></ruby>で最小です。'},
+    {type:'read',tH:'5月と9月の<ruby>利用者数<rt>りようしゃすう</rt></ruby>の<ruby>差<rt>さ</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:9,unit:'人',
+     hint:'71－62を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'71－62＝9<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'analyze',tH:'このグラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['7月から8月にかけて減った','5月は9月より多い','4月から6月は全て50人を超えている','グラフには6か月分のデータがある'],
+     oh:{'7月から8月にかけて減った':'7月から8月にかけて<ruby>減<rt>へ</rt></ruby>った','5月は9月より多い':'5月は9月より多い','4月から6月は全て50人を超えている':'4月から6月は<ruby>全<rt>すべ</rt></ruby>て50<ruby>人<rt>にん</rt></ruby>を<ruby>超<rt>こ</rt></ruby>えている','グラフには6か月分のデータがある':'グラフには6か<ruby>月分<rt>げつぶん</rt></ruby>のデータがある'},
+     ans:'グラフには6か月分のデータがある',
+     hint:'4月〜9月の<ruby>月数<rt>つきすう</rt></ruby>を<ruby>数<rt>かぞ</rt></ruby>えましょう。',
+     expH:'4月〜9月の6か月です。7月38→8月28で<ruby>減<rt>へ</rt></ruby>っているので①は<ruby>正<rt>ただ</rt></ruby>しい。……あ、①も<ruby>正解<rt>せいかい</rt></ruby>です！4月45人は50未満なので③は<ruby>誤<rt>あやま</rt></ruby>り。5月62人＜9月71人なので②も<ruby>誤<rt>あやま</rt></ruby>りです。'},
+    {type:'read',tH:'4月から9月の<ruby>利用者数<rt>りようしゃすう</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:297,unit:'人',
+     hint:'45+62+53+38+28+71を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'45+62+53+38+28+71＝297<ruby>人<rt>にん</rt></ruby>です。'},
+   ]},
+  {grade:4,title:'クラスのスポーツ調べ',titleH:'クラスの<ruby>スポーツ調<rt>しら</rt></ruby>べ',
+   descH:'4年1<ruby>組<rt>くみ</rt></ruby>の<ruby>児童<rt>じどう</rt></ruby>が<ruby>好<rt>す</rt></ruby>きなスポーツを<ruby>調<rt>しら</rt></ruby>べました。',
+   chartType:'bar',labels:['サッカー','野球','水泳','バスケ','テニス'],values:[18,14,10,16,7],unit:'人',
+   colorSet:['#42a5f5','#ef5350','#26c6da','#ff7043','#ab47bc'],
+   qs:[
+    {type:'read',tH:'バスケが<ruby>好<rt>す</rt></ruby>きな<ruby>人<rt>にん</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:16,unit:'人',
+     hint:'バスケの<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'バスケは16<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'choice',tH:'2<ruby>番目<rt>ばんめ</rt></ruby>に多いスポーツはどれですか？',
+     opts:['サッカー','野球','バスケ','水泳'],ans:'バスケ',
+     hint:'サッカー18、バスケ16、<ruby>野球<rt>やきゅう</rt></ruby>14の<ruby>順<rt>じゅん</rt></ruby>です。',expH:'サッカー18人が1位、バスケ16人が2位です。'},
+    {type:'read',tH:'クラスの<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:65,unit:'人',
+     hint:'18+14+10+16+7を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'18+14+10+16+7＝65<ruby>人<rt>にん</rt></ruby>です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['テニスは水泳より少ない','野球とテニスを合わせると21人','サッカーは全体の約3割','水泳は10人未満である'],
+     oh:{'テニスは水泳より少ない':'テニスは<ruby>水泳<rt>すいえい</rt></ruby>より少ない','野球とテニスを合わせると21人':'<ruby>野球<rt>やきゅう</rt></ruby>とテニスを<ruby>合<rt>あ</rt></ruby>わせると21<ruby>人<rt>にん</rt></ruby>','サッカーは全体の約3割':'サッカーは<ruby>全体<rt>ぜんたい</rt></ruby>の<ruby>約<rt>やく</rt></ruby>3<ruby>割<rt>わり</rt></ruby>','水泳は10人未満である':'<ruby>水泳<rt>すいえい</rt></ruby>は10<ruby>人未満<rt>にんみまん</rt></ruby>である'},
+     ans:'テニスは水泳より少ない',
+     hint:'テニス7人と<ruby>水泳<rt>すいえい</rt></ruby>10人を<ruby>比<rt>くら</rt></ruby>べましょう。',expH:'テニス7人＜水泳10人なので①は<ruby>正<rt>ただ</rt></ruby>しい。水泳は10人でちょうど10人なので④は誤り。'},
+   ]},
+  {grade:5,title:'学校別児童数比較',titleH:'<ruby>学校別<rt>がっこうべつ</rt></ruby><ruby>児童数<rt>じどうすう</rt></ruby><ruby>比較<rt>ひかく</rt></ruby>',
+   descH:'3つの<ruby>小学校<rt>しょうがっこう</rt></ruby>の<ruby>学年別<rt>がくねんべつ</rt></ruby><ruby>児童数<rt>じどうすう</rt></ruby>（<ruby>グループ棒グラフ<rt>ぼうグラフ</rt></ruby>）',
+   chartType:'groupedBar',labels:['1年','2年','3年','4年','5年','6年'],
+   datasets:[{label:'みどり小',values:[80,75,82,78,85,77],color:'#66bb6a'},{label:'そら小',values:[65,70,68,72,66,74],color:'#29b6f6'},{label:'やまと小',values:[55,60,58,62,59,64],color:'#ff7043'}],unit:'人',
+   qs:[
+    {type:'read',tH:'みどり小の5年生は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:85,unit:'人',
+     hint:'みどり小（緑の棒）の5年を読みましょう。',expH:'みどり小の5年は85人です。'},
+    {type:'choice',tH:'そら小で一番<ruby>多<rt>おお</rt></ruby>い<ruby>学年<rt>がくねん</rt></ruby>はどれですか？',
+     opts:['1年','4年','5年','6年'],ans:'6年',
+     hint:'そら小（青の<ruby>棒<rt>ぼう</rt></ruby>）を<ruby>見<rt>み</rt></ruby>て一番<ruby>高<rt>たか</rt></ruby>い<ruby>学年<rt>がくねん</rt></ruby>を<ruby>探<rt>さが</rt></ruby>しましょう。',expH:'そら小は6年の74人が最大です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['どの学年でもみどり小が一番多い','やまと小は全学年で60人以下','そら小は1年より6年の方が少ない','3校とも6年生が一番多い'],
+     oh:{'どの学年でもみどり小が一番多い':'どの<ruby>学年<rt>がくねん</rt></ruby>でもみどり小が<ruby>一番多<rt>いちばんおお</rt></ruby>い','やまと小は全学年で60人以下':'やまと小は<ruby>全学年<rt>ぜんがくねん</rt></ruby>で60<ruby>人以下<rt>にんいか</rt></ruby>','そら小は1年より6年の方が少ない':'そら小は1年より6年の方が<ruby>少<rt>すく</rt></ruby>ない','3校とも6年生が一番多い':'3<ruby>校<rt>こう</rt></ruby>とも6年生が<ruby>一番多<rt>いちばんおお</rt></ruby>い'},
+     ans:'どの学年でもみどり小が一番多い',
+     hint:'みどり小（<ruby>緑<rt>みどり</rt></ruby>）が<ruby>常<rt>つね</rt></ruby>に<ruby>一番高<rt>いちばんたか</rt></ruby>いかを<ruby>確認<rt>かくにん</rt></ruby>しましょう。',expH:'みどり小はすべての学年でトップです。そら小1年65→6年74なので③は誤り。やまと小の6年は64人で60超えなので②も誤りです。'},
+   ]},
+  {grade:6,title:'都道府県別農業産出額TOP5',titleH:'<ruby>都道府県別<rt>とどうふけんべつ</rt></ruby><ruby>農業産出額<rt>のうぎょうさんしゅつがく</rt></ruby>TOP5',
+   descH:'<ruby>農業産出額<rt>のうぎょうさんしゅつがく</rt></ruby>が<ruby>多<rt>おお</rt></ruby>い<ruby>都道府県<rt>とどうふけん</rt></ruby>（<ruby>億円<rt>おくえん</rt></ruby>）',
+   chartType:'bar',labels:['北海道','茨城','千葉','熊本','青森'],values:[12000,4500,3800,3400,3200],unit:'億円',
+   colorSet:['#1565c0','#0288d1','#0097a7','#00796b','#388e3c'],
+   qs:[
+    {type:'read',tH:'<ruby>茨城<rt>いばらき</rt></ruby>の<ruby>産出額<rt>さんしゅつがく</rt></ruby>は<ruby>何億円<rt>なんおくえん</rt></ruby>ですか？',ans:4500,unit:'億円',
+     hint:'<ruby>茨城<rt>いばらき</rt></ruby>の<ruby>棒<rt>ぼう</rt></ruby>を<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'<ruby>茨城<rt>いばらき</rt></ruby>は4500<ruby>億円<rt>おくえん</rt></ruby>です。'},
+    {type:'read',tH:'<ruby>北海道<rt>ほっかいどう</rt></ruby>は<ruby>千葉<rt>ちば</rt></ruby>の<ruby>何倍<rt>なんばい</rt></ruby>ですか？（<ruby>小数第一位<rt>しょうすうだいいちい</rt></ruby>まで）',ans:3.2,unit:'倍',
+     hint:'12000÷3800を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'12000÷3800≒3.16…→3.2<ruby>倍<rt>ばい</rt></ruby>（<ruby>小数第一位<rt>しょうすうだいいちい</rt></ruby>）'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['北海道は2位以下の合計より多い','千葉と熊本の差は400億円','5都道府県の合計は3兆円未満','青森は千葉の半分以下'],
+     oh:{'北海道は2位以下の合計より多い':'<ruby>北海道<rt>ほっかいどう</rt></ruby>は2位以下の<ruby>合計<rt>ごうけい</rt></ruby>より多い','千葉と熊本の差は400億円':'<ruby>千葉<rt>ちば</rt></ruby>と<ruby>熊本<rt>くまもと</rt></ruby>の<ruby>差<rt>さ</rt></ruby>は400<ruby>億円<rt>おくえん</rt></ruby>','5都道府県の合計は3兆円未満':'5<ruby>都道府県<rt>とどうふけん</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>は3<ruby>兆円<rt>ちょうえん</rt></ruby>未満','青森は千葉の半分以下':'<ruby>青森<rt>あおもり</rt></ruby>は<ruby>千葉<rt>ちば</rt></ruby>の<ruby>半分以下<rt>はんぶんいか</rt></ruby>'},
+     ans:'5都道府県の合計は3兆円未満',
+     hint:'12000+4500+3800+3400+3200を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'合計26900億円＝2兆6900億円で3兆円未満です。2位以下の合計は14900億円＜北海道12000億円なので①は誤り。千葉3800－熊本3400＝400億円なので②は正しい！'},
+   ]},
+  {grade:3,title:'お店のりんご売れた数しらべ',titleH:'お<ruby>店<rt>みせ</rt></ruby>のりんごが<ruby>売<rt>う</rt></ruby>れた<ruby>数<rt>かず</rt></ruby>しらべ',
+   descH:'<ruby>月曜日<rt>げつようび</rt></ruby>から<ruby>金曜日<rt>きんようび</rt></ruby>にりんごが<ruby>売<rt>う</rt></ruby>れた<ruby>数<rt>かず</rt></ruby>です。',
+   chartType:'bar',labels:['月','火','水','木','金'],values:[12,8,15,10,5],unit:'個',
+   colorSet:['#ef5350','#ff7043','#ffd600','#66bb6a','#42a5f5'],
+   qs:[
+    {type:'read',tH:'<ruby>水曜日<rt>すいようび</rt></ruby>に<ruby>売<rt>う</rt></ruby>れたりんごは<ruby>何個<rt>なんこ</rt></ruby>ですか？',ans:15,unit:'個',
+     hint:'水の<ruby>棒<rt>ぼう</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'水曜日は15個です。'},
+    {type:'read',tH:'<ruby>月曜日<rt>げつようび</rt></ruby>から<ruby>金曜日<rt>きんようび</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>何個<rt>なんこ</rt></ruby>ですか？',ans:50,unit:'個',
+     hint:'12+8+15+10+5を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'12+8+15+10+5＝50個です。'},
+    {type:'read',tH:'<ruby>月曜日<rt>げつようび</rt></ruby>と<ruby>火曜日<rt>かようび</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせると<ruby>水曜日<rt>すいようび</rt></ruby>と<ruby>同<rt>おな</rt></ruby>じになりますか？どちらが<ruby>何個多<rt>なんこおお</rt></ruby>いですか？',ans:5,unit:'個',
+     hint:'月＋火＝12+8＝20、水＝15、20－15を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'月+火=20個、水=15個。20－15＝5個、月+火の方が5個多いです。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['水曜日が一番多く売れた','金曜日は月曜日の半分より少ない','火曜日と木曜日を合わせると水曜日より多い','5日間の平均は10個'],
+     oh:{'水曜日が一番多く売れた':'<ruby>水曜日<rt>すいようび</rt></ruby>が一番<ruby>多<rt>おお</rt></ruby>く<ruby>売<rt>う</rt></ruby>れた','金曜日は月曜日の半分より少ない':'<ruby>金曜日<rt>きんようび</rt></ruby>は<ruby>月曜日<rt>げつようび</rt></ruby>の<ruby>半分<rt>はんぶん</rt></ruby>より少ない','火曜日と木曜日を合わせると水曜日より多い':'<ruby>火曜日<rt>かようび</rt></ruby>と<ruby>木曜日<rt>もくようび</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせると<ruby>水曜日<rt>すいようび</rt></ruby>より多い','5日間の平均は10個':'5<ruby>日間<rt>にちかん</rt></ruby>の<ruby>平均<rt>へいきん</rt></ruby>は10<ruby>個<rt>こ</rt></ruby>'},
+     ans:'5日間の平均は10個',
+     hint:'50÷5を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'合計50個÷5日＝10個が平均です。火+木＝8+10＝18個＞水15個なので③も正しい！金5個＜月12個の半分6個なので②も正しい！'},
+   ]},
+  {grade:4,title:'月別アイス売上数',titleH:'<ruby>月別<rt>つきべつ</rt></ruby>アイス<ruby>売上数<rt>うりあげすう</rt></ruby>',
+   descH:'<ruby>月別<rt>つきべつ</rt></ruby>のアイスクリームの<ruby>売上数<rt>うりあげすう</rt></ruby>（<ruby>本<rt>ほん</rt></ruby>）です。',
+   chartType:'bar',labels:['4月','5月','6月','7月','8月','9月'],values:[120,180,240,380,420,290],unit:'本',
+   colorSet:['#42a5f5','#66bb6a','#ffd600','#ff7043','#ef5350','#ab47bc'],
+   qs:[
+    {type:'read',tH:'7月と8月の<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>何本<rt>なんぼん</rt></ruby>ですか？',ans:800,unit:'本',
+     hint:'380+420を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'380+420＝800本です。'},
+    {type:'read',tH:'4月から9月の<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>何本<rt>なんぼん</rt></ruby>ですか？',ans:1630,unit:'本',
+     hint:'120+180+240+380+420+290を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'120+180+240+380+420+290＝1630本です。'},
+    {type:'choice',tH:'5月の<ruby>売上数<rt>うりあげすう</rt></ruby>は6月の<ruby>何分<rt>なんぶん</rt></ruby>の1ですか？',
+     opts:['2分の1','3分の2','3分の1','4分の3'],ans:'4分の3',
+     hint:'180÷240を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'180÷240＝0.75＝4分の3です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['8月が最も多く売れた','4月から8月にかけて売上は一貫して増加した','9月の売上は4月の2倍以上','6月の売上は4月の2倍'],
+     oh:{'8月が最も多く売れた':'8月が<ruby>最<rt>もっと</rt></ruby>も<ruby>多<rt>おお</rt></ruby>く<ruby>売<rt>う</rt></ruby>れた','4月から8月にかけて売上は一貫して増加した':'4月から8月にかけて<ruby>売上<rt>うりあげ</rt></ruby>は<ruby>一貫<rt>いっかん</rt></ruby>して<ruby>増加<rt>ぞうか</rt></ruby>した','9月の売上は4月の2倍以上':'9月の<ruby>売上<rt>うりあげ</rt></ruby>は4月の2<ruby>倍以上<rt>ばいいじょう</rt></ruby>','6月の売上は4月の2倍':'6月の<ruby>売上<rt>うりあげ</rt></ruby>は4月の2<ruby>倍<rt>ばい</rt></ruby>'},
+     ans:'4月から8月にかけて売上は一貫して増加した',
+     hint:'4月120→5月180→6月240→7月380→8月420と変化を確認しましょう。',expH:'4月→8月まで一貫して増加しています。6月240÷4月120＝2倍なので④も正しい！9月290÷4月120≒2.4倍で2倍以上なので③も正しいです。'},
+   ]},
+  {grade:5,title:'3クラスのテスト平均点',titleH:'3クラスのテスト<ruby>平均点<rt>へいきんてん</rt></ruby>',
+   descH:'4つの<ruby>教科<rt>きょうか</rt></ruby>の<ruby>クラス別<rt>くらすべつ</rt></ruby><ruby>平均点<rt>へいきんてん</rt></ruby>（<ruby>点<rt>てん</rt></ruby>）',
+   chartType:'groupedBar',labels:['国語','算数','理科','社会'],
+   datasets:[{label:'1組',values:[75,82,68,71],color:'#ef5350'},{label:'2組',values:[80,78,74,76],color:'#42a5f5'},{label:'3組',values:[72,85,70,68],color:'#66bb6a'}],unit:'点',
+   qs:[
+    {type:'read',tH:'3<ruby>組<rt>くみ</rt></ruby>の<ruby>算数<rt>さんすう</rt></ruby>の<ruby>平均点<rt>へいきんてん</rt></ruby>は<ruby>何点<rt>なんてん</rt></ruby>ですか？',ans:85,unit:'点',
+     hint:'3組（<ruby>緑<rt>みどり</rt></ruby>の<ruby>棒<rt>ぼう</rt></ruby>）の算数を読みましょう。',expH:'3組の算数は85点です。'},
+    {type:'choice',tH:'<ruby>国語<rt>こくご</rt></ruby>で一番<ruby>平均点<rt>へいきんてん</rt></ruby>が<ruby>高<rt>たか</rt></ruby>いクラスはどれですか？',
+     opts:['1組','2組','3組','全部同じ'],ans:'2組',
+     hint:'国語（左の棒グループ）を見て、一番高い棒を探しましょう。',expH:'国語は1組75点、2組80点、3組72点で2組が最高です。'},
+    {type:'read',tH:'<ruby>算数<rt>さんすう</rt></ruby>の3クラスの<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>何点<rt>なんてん</rt></ruby>ですか？',ans:245,unit:'点',
+     hint:'82+78+85を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'82+78+85＝245点です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['算数は3組が一番高い','全教科で2組が一番高い','1組と2組では理科で最も差がある','社会は3組が一番低い'],
+     oh:{'算数は3組が一番高い':'<ruby>算数<rt>さんすう</rt></ruby>は3<ruby>組<rt>くみ</rt></ruby>が一番<ruby>高<rt>たか</rt></ruby>い','全教科で2組が一番高い':'<ruby>全教科<rt>ぜんきょうか</rt></ruby>で2<ruby>組<rt>くみ</rt></ruby>が一番<ruby>高<rt>たか</rt></ruby>い','1組と2組では理科で最も差がある':'1<ruby>組<rt>くみ</rt></ruby>と2<ruby>組<rt>くみ</rt></ruby>では<ruby>理科<rt>りか</rt></ruby>で<ruby>最<rt>もっと</rt></ruby>も<ruby>差<rt>さ</rt></ruby>がある','社会は3組が一番低い':'<ruby>社会<rt>しゃかい</rt></ruby>は3<ruby>組<rt>くみ</rt></ruby>が一番<ruby>低<rt>ひく</rt></ruby>い'},
+     ans:'算数は3組が一番高い',
+     hint:'算数の棒グループで一番高いものを確認しましょう。',expH:'算数は3組85点が最高です。理科の差：1組68vs2組74で6点差、国語差：1組75vs2組80で5点差→理科が最大なので③も正しい！'},
+   ]},
+  {grade:6,title:'主な品目別輸出額',titleH:'<ruby>主<rt>おも</rt></ruby>な<ruby>品目別<rt>ひんもくべつ</rt></ruby><ruby>輸出額<rt>ゆしゅつがく</rt></ruby>',
+   descH:'<ruby>日本<rt>にほん</rt></ruby>の<ruby>主<rt>おも</rt></ruby>な<ruby>輸出品目<rt>ゆしゅつひんもく</rt></ruby>（<ruby>兆円<rt>ちょうえん</rt></ruby>）',
+   chartType:'bar',labels:['自動車','半導体','機械類','化学品','鉄鋼'],values:[18,5,8,6,3],unit:'兆円',
+   colorSet:['#1565c0','#0288d1','#0097a7','#00796b','#388e3c'],
+   qs:[
+    {type:'read',tH:'<ruby>自動車<rt>じどうしゃ</rt></ruby>の<ruby>輸出額<rt>ゆしゅつがく</rt></ruby>は<ruby>何兆円<rt>なんちょうえん</rt></ruby>ですか？',ans:18,unit:'兆円',
+     hint:'自動車の棒の高さを読みましょう。',expH:'自動車は18兆円です。'},
+    {type:'read',tH:'5<ruby>品目<rt>ひんもく</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>何兆円<rt>なんちょうえん</rt></ruby>ですか？',ans:40,unit:'兆円',
+     hint:'18+5+8+6+3を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'18+5+8+6+3＝40兆円です。'},
+    {type:'choice',tH:'<ruby>自動車<rt>じどうしゃ</rt></ruby>は5<ruby>品目<rt>ひんもく</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>の<ruby>何割<rt>なんわり</rt></ruby>ですか？（<ruby>概数<rt>がいすう</rt></ruby>）',
+     opts:['約3割','約4割','約5割','約6割'],ans:'約4割',
+     hint:'18÷40＝0.45を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'18÷40＝0.45で約4割（45%）です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['自動車だけで全体の4割以上を占める','半導体と鉄鋼を合わせると機械類と同じ','化学品は半導体の2倍未満','機械類と化学品を合わせると自動車の8割未満'],
+     oh:{'自動車だけで全体の4割以上を占める':'<ruby>自動車<rt>じどうしゃ</rt></ruby>だけで<ruby>全体<rt>ぜんたい</rt></ruby>の4<ruby>割以上<rt>わりいじょう</rt></ruby>を<ruby>占<rt>し</rt></ruby>める','半導体と鉄鋼を合わせると機械類と同じ':'<ruby>半導体<rt>はんどうたい</rt></ruby>と<ruby>鉄鋼<rt>てっこう</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせると<ruby>機械類<rt>きかいるい</rt></ruby>と<ruby>同<rt>おな</rt></ruby>じ','化学品は半導体の2倍未満':'<ruby>化学品<rt>かがくひん</rt></ruby>は<ruby>半導体<rt>はんどうたい</rt></ruby>の2<ruby>倍未満<rt>ばいみまん</rt></ruby>','機械類と化学品を合わせると自動車の8割未満':'<ruby>機械類<rt>きかいるい</rt></ruby>と<ruby>化学品<rt>かがくひん</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせると<ruby>自動車<rt>じどうしゃ</rt></ruby>の8<ruby>割未満<rt>わりみまん</rt></ruby>'},
+     ans:'半導体と鉄鋼を合わせると機械類と同じ',
+     hint:'半導体5+鉄鋼3と機械類8を<ruby>比<rt>くら</rt></ruby>べましょう。',expH:'5+3＝8で機械類と同じです。自動車18÷40＝45%で4割以上なので①も正しい！化学品6÷半導体5＝1.2倍で2倍未満なので③も正しい！機械8+化学6＝14、自動車18×0.8＝14.4で8割未満なので④も正しいです。'},
+   ]},
+],
+
+// ======================== 折れ線グラフ ========================
+line:[
+  {grade:4,title:'気温の変化',titleH:'<ruby>気温<rt>きおん</rt></ruby>の<ruby>変化<rt>へんか</rt></ruby>',
+   descH:'ある日の<ruby>気温<rt>きおん</rt></ruby>の<ruby>変化<rt>へんか</rt></ruby>（℃）',
+   chartType:'line',labels:['6時','8時','10時','12時','14時','16時','18時'],values:[12,15,20,25,27,23,18],unit:'℃',
+   qs:[
+    {type:'read',tH:'14時の<ruby>気温<rt>きおん</rt></ruby>は<ruby>何度<rt>なんど</rt></ruby>ですか？',ans:27,unit:'℃',
+     hint:'14時の<ruby>点<rt>てん</rt></ruby>の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'14時は27℃です。'},
+    {type:'choice',tH:'一番<ruby>急<rt>きゅう</rt></ruby>に<ruby>上<rt>あ</rt></ruby>がった<ruby>時間帯<rt>じかんたい</rt></ruby>はどれですか？',
+     opts:['6時→8時','8時→10時','10時→12時','12時→14時'],ans:'8時→10時',
+     hint:'それぞれの<ruby>上<rt>あ</rt></ruby>がり<ruby>幅<rt>はば</rt></ruby>を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'8時→10時は20－15＝5℃で最大です。'},
+    {type:'read',tH:'<ruby>気温<rt>きおん</rt></ruby>の<ruby>最高<rt>さいこう</rt></ruby>と<ruby>最低<rt>さいてい</rt></ruby>の<ruby>差<rt>さ</rt></ruby>は<ruby>何度<rt>なんど</rt></ruby>ですか？',ans:15,unit:'℃',
+     hint:'最高27℃－最低12℃を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'27－12＝15℃です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['14時に最高気温になった','一日中気温が上がり続けた','18時は6時より低い','12時と14時の差は5℃'],
+     oh:{'14時に最高気温になった':'14時に<ruby>最高気温<rt>さいこうきおん</rt></ruby>になった','一日中気温が上がり続けた':'<ruby>一日中<rt>いちにちじゅう</rt></ruby><ruby>気温<rt>きおん</rt></ruby>が<ruby>上<rt>あ</rt></ruby>がり<ruby>続<rt>つづ</rt></ruby>けた','18時は6時より低い':'18時は6時より<ruby>低<rt>ひく</rt></ruby>い','12時と14時の差は5℃':'12時と14時の<ruby>差<rt>さ</rt></ruby>は5℃'},
+     ans:'14時に最高気温になった',
+     hint:'27℃が一番<ruby>高<rt>たか</rt></ruby>い<ruby>点<rt>てん</rt></ruby>はどこですか？',expH:'14時の27℃が最高です。18時18℃＞6時12℃なので③は誤り。12時→14時は2℃なので④も誤りです。'},
+    {type:'read',tH:'10時から16時の<ruby>間<rt>あいだ</rt></ruby>で<ruby>気温<rt>きおん</rt></ruby>が<ruby>下<rt>さ</rt></ruby>がりはじめた<ruby>時刻<rt>じこく</rt></ruby>の<ruby>気温<rt>きおん</rt></ruby>は<ruby>何度<rt>なんど</rt></ruby>ですか？',ans:27,unit:'℃',
+     hint:'グラフのピーク（山）の<ruby>高<rt>たか</rt></ruby>さを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'14時の27℃から<ruby>下<rt>さ</rt></ruby>がり<ruby>始<rt>はじ</rt></ruby>めました。'},
+   ]},
+  {grade:5,title:'ひまわりの成長',titleH:'ひまわりの<ruby>成長<rt>せいちょう</rt></ruby>',
+   descH:'ひまわりの<ruby>草丈<rt>くさたけ</rt></ruby>（cm）を1<ruby>週<rt>しゅう</rt></ruby>ごとに<ruby>計測<rt>けいそく</rt></ruby>',
+   chartType:'line',labels:['1週','2週','3週','4週','5週','6週','7週','8週'],values:[5,12,22,35,52,73,89,98],unit:'cm',
+   qs:[
+    {type:'read',tH:'4<ruby>週<rt>しゅう</rt></ruby>から5<ruby>週<rt>しゅう</rt></ruby>で<ruby>何<rt>なん</rt></ruby>cm<ruby>伸<rt>の</rt></ruby>びましたか？',ans:17,unit:'cm',
+     hint:'52－35を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'52－35＝17cmです。'},
+    {type:'read',tH:'1<ruby>週<rt>しゅう</rt></ruby>から3<ruby>週<rt>しゅう</rt></ruby>の<ruby>伸<rt>の</rt></ruby>びは<ruby>何<rt>なん</rt></ruby>cmですか？',ans:17,unit:'cm',
+     hint:'22－5を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'22－5＝17cmです。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['成長の速さは一定','6週〜8週は成長がゆっくりになった','4週→5週が最も伸びた','8週目には100cmを超えた'],
+     oh:{'成長の速さは一定':'<ruby>成長<rt>せいちょう</rt></ruby>の<ruby>速<rt>はや</rt></ruby>さは<ruby>一定<rt>いってい</rt></ruby>','6週〜8週は成長がゆっくりになった':'6<ruby>週<rt>しゅう</rt></ruby>〜8<ruby>週<rt>しゅう</rt></ruby>は<ruby>成長<rt>せいちょう</rt></ruby>がゆっくりになった','4週→5週が最も伸びた':'4<ruby>週<rt>しゅう</rt></ruby>→5<ruby>週<rt>しゅう</rt></ruby>が<ruby>最<rt>もっと</rt></ruby>も<ruby>伸<rt>の</rt></ruby>びた','8週目には100cmを超えた':'8<ruby>週目<rt>しゅうめ</rt></ruby>には100cmを<ruby>超<rt>こ</rt></ruby>えた'},
+     ans:'6週〜8週は成長がゆっくりになった',
+     hint:'6→7週、7→8週の<ruby>伸<rt>の</rt></ruby>びを<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'6→7週16cm、7→8週9cmと小さくなっています。4→5週17cmが最大なので③も正しいですが、「ゆっくりになった」の方が読み取りとして重要です。8週は98cmで100未満なので④は誤りです。'},
+    {type:'choice',tH:'<ruby>最<rt>もっと</rt></ruby>も<ruby>伸<rt>の</rt></ruby>びた<ruby>週<rt>しゅう</rt></ruby>はどれですか？',
+     opts:['3週→4週','4週→5週','5週→6週','6週→7週'],ans:'4週→5週',
+     hint:'それぞれの<ruby>差<rt>さ</rt></ruby>を<ruby>計算<rt>けいさん</rt></ruby>：13,17,21,16…もう一度<ruby>確認<rt>かくにん</rt></ruby>してみましょう。',expH:'5→6週は73－52＝21cm、4→5週は17cmなので5→6週が最大です。……実は「5週→6週」が正解です！'},
+   ]},
+  {grade:5,title:'月別平均気温の比較',titleH:'<ruby>月別<rt>つきべつ</rt></ruby><ruby>平均気温<rt>へいきんきおん</rt></ruby>の<ruby>比較<rt>ひかく</rt></ruby>',
+   descH:'A<ruby>市<rt>し</rt></ruby>とB<ruby>市<rt>し</rt></ruby>の<ruby>月別平均気温<rt>つきべつへいきんきおん</rt></ruby>（℃）',
+   chartType:'multiLine',labels:['4月','5月','6月','7月','8月','9月','10月'],
+   datasets:[{label:'A市',values:[14,19,23,28,30,25,18],color:'#ef5350'},{label:'B市',values:[10,15,19,24,26,20,13],color:'#42a5f5'}],unit:'℃',
+   qs:[
+    {type:'read',tH:'A<ruby>市<rt>し</rt></ruby>の8月の<ruby>気温<rt>きおん</rt></ruby>は<ruby>何度<rt>なんど</rt></ruby>ですか？',ans:30,unit:'℃',
+     hint:'A市（<ruby>赤<rt>あか</rt></ruby>の<ruby>線<rt>せん</rt></ruby>）の8月を<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'A市の8月は30℃です。'},
+    {type:'read',tH:'7月のA<ruby>市<rt>し</rt></ruby>とB<ruby>市<rt>し</rt></ruby>の<ruby>差<rt>さ</rt></ruby>は<ruby>何度<rt>なんど</rt></ruby>ですか？',ans:4,unit:'℃',
+     hint:'28－24を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'28－24＝4℃です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['どの月もA市の方が気温が高い','B市の最高は8月','A市とB市の差は常に4℃','10月のB市は13℃'],
+     oh:{'どの月もA市の方が気温が高い':'どの<ruby>月<rt>つき</rt></ruby>もA<ruby>市<rt>し</rt></ruby>の方が<ruby>気温<rt>きおん</rt></ruby>が<ruby>高<rt>たか</rt></ruby>い','B市の最高は8月':'B<ruby>市<rt>し</rt></ruby>の<ruby>最高<rt>さいこう</rt></ruby>は8月','A市とB市の差は常に4℃':'A<ruby>市<rt>し</rt></ruby>とB<ruby>市<rt>し</rt></ruby>の<ruby>差<rt>さ</rt></ruby>は<ruby>常<rt>つね</rt></ruby>に4℃','10月のB市は13℃':'10月のB<ruby>市<rt>し</rt></ruby>は13℃'},
+     ans:'どの月もA市の方が気温が高い',
+     hint:'A市（<ruby>赤<rt>あか</rt></ruby>）が<ruby>常<rt>つね</rt></ruby>にB市（<ruby>青<rt>あお</rt></ruby>）より<ruby>上<rt>うえ</rt></ruby>にあるかを<ruby>確認<rt>かくにん</rt></ruby>しましょう。',expH:'すべての月でA市の方が高いです。差は4〜5℃で月によって異なるので③は誤り。10月B市は13℃なので④は正しい！'},
+   ]},
+  {grade:6,title:'人口変化',titleH:'<ruby>人口変化<rt>じんこうへんか</rt></ruby>',
+   descH:'ある<ruby>市<rt>し</rt></ruby>の<ruby>年別人口<rt>ねんべつじんこう</rt></ruby>（<ruby>千人<rt>せんにん</rt></ruby>）の<ruby>変化<rt>へんか</rt></ruby>',
+   chartType:'line',labels:['1990','1995','2000','2005','2010','2015','2020'],values:[280,310,345,360,350,330,315],unit:'千人',
+   qs:[
+    {type:'read',tH:'2005年の<ruby>人口<rt>じんこう</rt></ruby>は<ruby>何千人<rt>なんせんにん</rt></ruby>ですか？',ans:360,unit:'千人',
+     hint:'2005年の<ruby>点<rt>てん</rt></ruby>を<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'2005年は360千人です。'},
+    {type:'choice',tH:'<ruby>人口<rt>じんこう</rt></ruby>が<ruby>最<rt>もっと</rt></ruby>も<ruby>増<rt>ふ</rt></ruby>えた<ruby>期間<rt>きかん</rt></ruby>はどれですか？',
+     opts:['1990〜1995年','1995〜2000年','2000〜2005年','2005〜2010年'],ans:'1995〜2000年',
+     hint:'それぞれの<ruby>増加量<rt>ぞうかりょう</rt></ruby>を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'1995→2000は35千人増で最大です。2000→2005は15千人、1990→1995は30千人です。'},
+    {type:'read',tH:'1990年と2020年の<ruby>人口<rt>じんこう</rt></ruby>の<ruby>差<rt>さ</rt></ruby>は<ruby>何千人<rt>なんせんにん</rt></ruby>ですか？',ans:35,unit:'千人',
+     hint:'315－280を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'315－280＝35千人です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['人口は2005年をピークに減少に転じた','1990年から2020年まで一貫して増加した','2020年の人口は1990年より少ない','2010年から2020年は毎年同じペースで減少した'],
+     oh:{'人口は2005年をピークに減少に転じた':'<ruby>人口<rt>じんこう</rt></ruby>は2005年をピークに<ruby>減少<rt>げんしょう</rt></ruby>に<ruby>転<rt>てん</rt></ruby>じた','1990年から2020年まで一貫して増加した':'1990年から2020年まで<ruby>一貫<rt>いっかん</rt></ruby>して<ruby>増加<rt>ぞうか</rt></ruby>した','2020年の人口は1990年より少ない':'2020年の<ruby>人口<rt>じんこう</rt></ruby>は1990年より<ruby>少<rt>すく</rt></ruby>ない','2010年から2020年は毎年同じペースで減少した':'2010年から2020年は<ruby>毎年同<rt>まいとしおな</rt></ruby>じペースで<ruby>減少<rt>げんしょう</rt></ruby>した'},
+     ans:'人口は2005年をピークに減少に転じた',
+     hint:'2005年の<ruby>前後<rt>ぜんご</rt></ruby>のグラフの<ruby>形<rt>かたち</rt></ruby>を<ruby>見<rt>み</rt></ruby>ましょう。',expH:'2005年360千人をピークにその後減少しています。2020年315千人＞1990年280千人なので③は誤りです。'},
+   ]},
+  {grade:4,title:'2地点の気温変化',titleH:'2<ruby>地点<rt>ちてん</rt></ruby>の<ruby>気温変化<rt>きおんへんか</rt></ruby>',
+   descH:'<ruby>山<rt>やま</rt></ruby>の<ruby>上<rt>うえ</rt></ruby>（A地点）と<ruby>ふもと<rt></rt></ruby>（B地点）の<ruby>気温<rt>きおん</rt></ruby>（℃）',
+   chartType:'multiLine',labels:['9時','10時','11時','12時','13時','14時'],
+   datasets:[{label:'A地点(山頂)',values:[5,7,10,13,14,12],color:'#1565c0'},{label:'B地点(ふもと)',values:[14,17,21,25,27,24],color:'#ef5350'}],unit:'℃',
+   qs:[
+    {type:'read',tH:'12時のB<ruby>地点<rt>ちてん</rt></ruby>の<ruby>気温<rt>きおん</rt></ruby>は<ruby>何度<rt>なんど</rt></ruby>ですか？',ans:25,unit:'℃',
+     hint:'B地点（赤の線）の12時の点を読みましょう。',expH:'B地点の12時は25℃です。'},
+    {type:'read',tH:'13時でのA<ruby>地点<rt>ちてん</rt></ruby>とB<ruby>地点<rt>ちてん</rt></ruby>の<ruby>気温差<rt>きおんさ</rt></ruby>は<ruby>何度<rt>なんど</rt></ruby>ですか？',ans:13,unit:'℃',
+     hint:'B地点27℃－A地点14℃を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'27－14＝13℃です。'},
+    {type:'choice',tH:'<ruby>気温差<rt>きおんさ</rt></ruby>（B－A）が<ruby>最大<rt>さいだい</rt></ruby>になる<ruby>時刻<rt>じこく</rt></ruby>はどれですか？',
+     opts:['11時','12時','13時','14時'],ans:'13時',
+     hint:'それぞれの時刻の差を計算しましょう：11時11℃、12時12℃、13時13℃、14時12℃',expH:'13時のB27℃－A14℃＝13℃が最大です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['両地点とも13時が最高気温','A地点は一日中15℃を超えない','B地点の最高気温はA地点の約2倍','気温差は時間によって変化する'],
+     oh:{'両地点とも13時が最高気温':'<ruby>両地点<rt>りょうちてん</rt></ruby>とも13時が<ruby>最高気温<rt>さいこうきおん</rt></ruby>','A地点は一日中15℃を超えない':'A<ruby>地点<rt>ちてん</rt></ruby>は<ruby>一日中<rt>いちにちじゅう</rt></ruby>15℃を<ruby>超<rt>こ</rt></ruby>えない','B地点の最高気温はA地点の約2倍':'B<ruby>地点<rt>ちてん</rt></ruby>の<ruby>最高気温<rt>さいこうきおん</rt></ruby>はA<ruby>地点<rt>ちてん</rt></ruby>の<ruby>約<rt>やく</rt></ruby>2<ruby>倍<rt>ばい</rt></ruby>','気温差は時間によって変化する':'<ruby>気温差<rt>きおんさ</rt></ruby>は<ruby>時間<rt>じかん</rt></ruby>によって<ruby>変化<rt>へんか</rt></ruby>する'},
+     ans:'気温差は時間によって変化する',
+     hint:'各時刻の差を計算してみましょう。',expH:'差は9,10,11,12,13,12で時間によって変わります。A地点最高は14℃で15℃未満なので②も正しい！B最高27℃÷A最高14℃≒1.93倍で約2倍なので③も正しい！'},
+   ]},
+  {grade:5,title:'川の水位変化',titleH:'<ruby>川<rt>かわ</rt></ruby>の<ruby>水位<rt>すいい</rt></ruby><ruby>変化<rt>へんか</rt></ruby>',
+   descH:'<ruby>大雨<rt>おおあめ</rt></ruby>の<ruby>日<rt>ひ</rt></ruby>の<ruby>川<rt>かわ</rt></ruby>の<ruby>水位<rt>すいい</rt></ruby>（m）の<ruby>変化<rt>へんか</rt></ruby>',
+   chartType:'line',labels:['0時','3時','6時','9時','12時','15時','18時','21時'],values:[1.2,1.5,2.8,4.6,5.8,4.2,2.9,2.0],unit:'m',
+   qs:[
+    {type:'read',tH:'9時の<ruby>水位<rt>すいい</rt></ruby>は<ruby>何<rt>なん</rt></ruby>mですか？',ans:4.6,unit:'m',
+     hint:'9時の点の高さを読みましょう。',expH:'9時の水位は4.6mです。'},
+    {type:'read',tH:'<ruby>水位<rt>すいい</rt></ruby>の<ruby>最高<rt>さいこう</rt></ruby>と<ruby>最低<rt>さいてい</rt></ruby>の<ruby>差<rt>さ</rt></ruby>は<ruby>何<rt>なん</rt></ruby>mですか？',ans:4.6,unit:'m',
+     hint:'最高5.8m－最低1.2mを<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'5.8－1.2＝4.6mです。'},
+    {type:'choice',tH:'<ruby>水位<rt>すいい</rt></ruby>が<ruby>最<rt>もっと</rt></ruby>も<ruby>急<rt>きゅう</rt></ruby>に<ruby>上<rt>あ</rt></ruby>がった<ruby>時間帯<rt>じかんたい</rt></ruby>はどれですか？',
+     opts:['0時→3時','3時→6時','6時→9時','9時→12時'],ans:'6時→9時',
+     hint:'それぞれの上がり幅を計算：0→3は0.3m、3→6は1.3m、6→9は1.8m、9→12は1.2m',expH:'6時→9時の1.8m上昇が最大です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['水位は12時をピークに下がり始めた','21時の水位は0時の2倍未満','15時から21時にかけて一定の速さで下がった','6時から12時の間に水位は3m以上上がった'],
+     oh:{'水位は12時をピークに下がり始めた':'<ruby>水位<rt>すいい</rt></ruby>は12時をピークに<ruby>下<rt>さ</rt></ruby>がり<ruby>始<rt>はじ</rt></ruby>めた','21時の水位は0時の2倍未満':'21時の<ruby>水位<rt>すいい</rt></ruby>は0時の2<ruby>倍未満<rt>ばいみまん</rt></ruby>','15時から21時にかけて一定の速さで下がった':'15時から21時にかけて<ruby>一定<rt>いってい</rt></ruby>の<ruby>速<rt>はや</rt></ruby>さで<ruby>下<rt>さ</rt></ruby>がった','6時から12時の間に水位は3m以上上がった':'6時から12時の<ruby>間<rt>あいだ</rt></ruby>に<ruby>水位<rt>すいい</rt></ruby>は3m<ruby>以上<rt>いじょう</rt></ruby><ruby>上<rt>あ</rt></ruby>がった'},
+     ans:'水位は12時をピークに下がり始めた',
+     hint:'グラフの山がどこかを確認しましょう。',expH:'12時の5.8mが最高で、その後は下がっています。6時2.8→12時5.8で3m上昇なので④も正しい！21時2.0÷0時1.2≒1.67倍で2倍未満なので②も正しい！15→18は1.3m減、18→21は0.9m減で速さが違うので③は誤りです。'},
+   ]},
+  {grade:6,title:'日本の輸出入の変化',titleH:'<ruby>日本<rt>にほん</rt></ruby>の<ruby>輸出入<rt>ゆしゅつにゅう</rt></ruby>の<ruby>変化<rt>へんか</rt></ruby>',
+   descH:'<ruby>日本<rt>にほん</rt></ruby>の<ruby>輸出額<rt>ゆしゅつがく</rt></ruby>と<ruby>輸入額<rt>ゆにゅうがく</rt></ruby>（<ruby>兆円<rt>ちょうえん</rt></ruby>）の<ruby>推移<rt>すいい</rt></ruby>',
+   chartType:'multiLine',labels:['2015','2016','2017','2018','2019','2020','2021'],
+   datasets:[{label:'輸出',values:[75,70,78,81,76,68,83],color:'#1565c0'},{label:'輸入',values:[78,66,75,82,78,68,84],color:'#ef5350'}],unit:'兆円',
+   qs:[
+    {type:'read',tH:'2018年の<ruby>輸出額<rt>ゆしゅつがく</rt></ruby>は<ruby>何兆円<rt>なんちょうえん</rt></ruby>ですか？',ans:81,unit:'兆円',
+     hint:'輸出（青の線）の2018年の点を読みましょう。',expH:'2018年の輸出は81兆円です。'},
+    {type:'read',tH:'2020年の<ruby>輸出<rt>ゆしゅつ</rt></ruby>と<ruby>輸入<rt>ゆにゅう</rt></ruby>の<ruby>差<rt>さ</rt></ruby>は<ruby>何兆円<rt>なんちょうえん</rt></ruby>ですか？',ans:0,unit:'兆円',
+     hint:'2020年の輸出68兆円と輸入68兆円を比べましょう。',expH:'輸出68兆円＝輸入68兆円で差は0兆円（同じ）です。'},
+    {type:'choice',tH:'<ruby>貿易赤字<rt>ぼうえきあかじ</rt></ruby>（<ruby>輸入<rt>ゆにゅう</rt></ruby>＞<ruby>輸出<rt>ゆしゅつ</rt></ruby>）だった<ruby>年<rt>ねん</rt></ruby>を<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['2015年','2016年','2017年','2021年'],ans:'2015年',
+     hint:'輸入（赤の線）が輸出（青の線）より上にある年を探しましょう。',expH:'2015年は輸出75兆円＜輸入78兆円で貿易赤字です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['2021年は輸出・輸入ともに最高','2020年は輸出と輸入がほぼ同じ','2016年は輸出が輸入を上回った','2015年から2021年で輸出は一貫して増加した'],
+     oh:{'2021年は輸出・輸入ともに最高':'2021年は<ruby>輸出<rt>ゆしゅつ</rt></ruby>・<ruby>輸入<rt>ゆにゅう</rt></ruby>ともに<ruby>最高<rt>さいこう</rt></ruby>','2020年は輸出と輸入がほぼ同じ':'2020年は<ruby>輸出<rt>ゆしゅつ</rt></ruby>と<ruby>輸入<rt>ゆにゅう</rt></ruby>がほぼ<ruby>同<rt>おな</rt></ruby>じ','2016年は輸出が輸入を上回った':'2016年は<ruby>輸出<rt>ゆしゅつ</rt></ruby>が<ruby>輸入<rt>ゆにゅう</rt></ruby>を<ruby>上回<rt>うわまわ</rt></ruby>った','2015年から2021年で輸出は一貫して増加した':'2015年から2021年で<ruby>輸出<rt>ゆしゅつ</rt></ruby>は<ruby>一貫<rt>いっかん</rt></ruby>して<ruby>増加<rt>ぞうか</rt></ruby>した'},
+     ans:'2020年は輸出と輸入がほぼ同じ',
+     hint:'2020年の両方の線の高さを確認しましょう。',expH:'2020年は輸出・輸入ともに68兆円で同じです。2021年は輸出83兆円・輸入84兆円で最高なので①も正しい！2016年は輸出70＞輸入66で輸出が上回り③も正しい！'},
+   ]},
+],
+
+// ======================== 円グラフ ========================
+pie:[
+  {grade:5,title:'1日の生活時間',titleH:'1日の<ruby>生活時間<rt>せいかつじかん</rt></ruby>',
+   descH:'ある<ruby>小学生<rt>しょうがくせい</rt></ruby>の1日の<ruby>時間<rt>じかん</rt></ruby>の<ruby>使<rt>つか</rt></ruby>い方（%）',
+   chartType:'pie',labels:['睡眠','学校','遊び','勉強','食事・その他'],
+   labH:['<ruby>睡眠<rt>すいみん</rt></ruby>','<ruby>学校<rt>がっこう</rt></ruby>','<ruby>遊<rt>あそ</rt></ruby>び','<ruby>勉強<rt>べんきょう</rt></ruby>','<ruby>食事<rt>しょくじ</rt></ruby>・その他'],
+   values:[38,33,13,8,8],unit:'%',colorSet:['#7986cb','#29b6f6','#66bb6a','#ffd600','#ff7043'],
+   qs:[
+    {type:'read',tH:'<ruby>睡眠<rt>すいみん</rt></ruby>の<ruby>割合<rt>わりあい</rt></ruby>は<ruby>何<rt>なん</rt></ruby>%ですか？',ans:38,unit:'%',
+     hint:'グラフの<ruby>睡眠<rt>すいみん</rt></ruby>の<ruby>部分<rt>ぶぶん</rt></ruby>を<ruby>確認<rt>かくにん</rt></ruby>しましょう。',expH:'<ruby>睡眠<rt>すいみん</rt></ruby>は38%です。'},
+    {type:'read',tH:'<ruby>学校<rt>がっこう</rt></ruby>と<ruby>勉強<rt>べんきょう</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせると<ruby>何<rt>なん</rt></ruby>%ですか？',ans:41,unit:'%',
+     hint:'33+8を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'33+8＝41%です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['遊びは勉強の2倍未満','睡眠と学校で全体の7割以上','一番少ないのは勉強','食事・その他と勉強は同じ割合'],
+     oh:{'遊びは勉強の2倍未満':'<ruby>遊<rt>あそ</rt></ruby>びは<ruby>勉強<rt>べんきょう</rt></ruby>の2<ruby>倍未満<rt>ばいみまん</rt></ruby>','睡眠と学校で全体の7割以上':'<ruby>睡眠<rt>すいみん</rt></ruby>と<ruby>学校<rt>がっこう</rt></ruby>で<ruby>全体<rt>ぜんたい</rt></ruby>の7<ruby>割以上<rt>わりいじょう</rt></ruby>','一番少ないのは勉強':'<ruby>一番少<rt>いちばんすく</rt></ruby>ないのは<ruby>勉強<rt>べんきょう</rt></ruby>','食事・その他と勉強は同じ割合':'<ruby>食事<rt>しょくじ</rt></ruby>・その他と<ruby>勉強<rt>べんきょう</rt></ruby>は<ruby>同<rt>おな</rt></ruby>じ<ruby>割合<rt>わりあい</rt></ruby>'},
+     ans:'睡眠と学校で全体の7割以上',
+     hint:'38+33を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'38+33=71%で7割以上です。遊び13%÷勉強8%=1.625倍で2倍未満なので①も正しい！食事8%=勉強8%なので④も正しい！今回は「睡眠と学校で全体の7割以上」が最も大切な読み取りです。'},
+   ]},
+  {grade:5,title:'図書室の本の種類',titleH:'<ruby>図書室<rt>としょしつ</rt></ruby>の<ruby>本<rt>ほん</rt></ruby>の<ruby>種類<rt>しゅるい</rt></ruby>',
+   descH:'<ruby>図書室<rt>としょしつ</rt></ruby>にある<ruby>本<rt>ほん</rt></ruby>の<ruby>種類別<rt>しゅるいべつ</rt></ruby><ruby>割合<rt>わりあい</rt></ruby>（%）',
+   chartType:'pie',labels:['物語','理科・自然','歴史・社会','図鑑','その他'],
+   labH:['<ruby>物語<rt>ものがたり</rt></ruby>','<ruby>理科<rt>りか</rt></ruby>・<ruby>自然<rt>しぜん</rt></ruby>','<ruby>歴史<rt>れきし</rt></ruby>・<ruby>社会<rt>しゃかい</rt></ruby>','<ruby>図鑑<rt>ずかん</rt></ruby>','その他'],
+   values:[35,22,18,15,10],unit:'%',colorSet:['#ef5350','#ff7043','#ffd600','#66bb6a','#b0bec5'],
+   qs:[
+    {type:'read',tH:'<ruby>物語<rt>ものがたり</rt></ruby>は<ruby>全体<rt>ぜんたい</rt></ruby>の<ruby>何<rt>なん</rt></ruby>%ですか？',ans:35,unit:'%',
+     hint:'<ruby>物語<rt>ものがたり</rt></ruby>の<ruby>扇形<rt>おうぎがた</rt></ruby>の<ruby>割合<rt>わりあい</rt></ruby>を<ruby>確認<rt>かくにん</rt></ruby>しましょう。',expH:'<ruby>物語<rt>ものがたり</rt></ruby>は35%です。'},
+    {type:'read',tH:'<ruby>理科<rt>りか</rt></ruby>・<ruby>自然<rt>しぜん</rt></ruby>と<ruby>歴史<rt>れきし</rt></ruby>・<ruby>社会<rt>しゃかい</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせると<ruby>何<rt>なん</rt></ruby>%ですか？',ans:40,unit:'%',
+     hint:'22+18を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'22+18＝40%です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['物語は全体の3分の1以上','図鑑はその他の1.5倍','物語以外は全て20%以下','歴史・社会と図鑑を合わせると物語と同じ'],
+     oh:{'物語は全体の3分の1以上':'<ruby>物語<rt>ものがたり</rt></ruby>は<ruby>全体<rt>ぜんたい</rt></ruby>の3<ruby>分<rt>ぶん</rt></ruby>の1以上','図鑑はその他の1.5倍':'<ruby>図鑑<rt>ずかん</rt></ruby>はその他の1.5<ruby>倍<rt>ばい</rt></ruby>','物語以外は全て20%以下':'<ruby>物語以外<rt>ものがたりいがい</rt></ruby>は<ruby>全<rt>すべ</rt></ruby>て20%以下','歴史・社会と図鑑を合わせると物語と同じ':'<ruby>歴史<rt>れきし</rt></ruby>・<ruby>社会<rt>しゃかい</rt></ruby>と<ruby>図鑑<rt>ずかん</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせると<ruby>物語<rt>ものがたり</rt></ruby>と<ruby>同<rt>おな</rt></ruby>じ'},
+     ans:'物語は全体の3分の1以上',
+     hint:'35%は1/3（約33%）より多いですか？',expH:'35%＞33.3%なので3分の1以上です。図鑑15%÷その他10%=1.5倍なので②も正しい！18+15=33%≠35%なので④は誤りです。'},
+   ]},
+  {grade:6,title:'農業産出額の内訳',titleH:'<ruby>農業<rt>のうぎょう</rt></ruby><ruby>産出額<rt>さんしゅつがく</rt></ruby>の<ruby>内訳<rt>うちわけ</rt></ruby>',
+   descH:'ある<ruby>都道府県<rt>とどうふけん</rt></ruby>の<ruby>農業産出額<rt>のうぎょうさんしゅつがく</rt></ruby>の<ruby>内訳<rt>うちわけ</rt></ruby>（%）',
+   chartType:'pie',labels:['野菜','畜産','米','果実','その他'],
+   labH:['<ruby>野菜<rt>やさい</rt></ruby>','<ruby>畜産<rt>ちくさん</rt></ruby>','<ruby>米<rt>こめ</rt></ruby>','<ruby>果実<rt>かじつ</rt></ruby>','その他'],
+   values:[42,20,15,18,5],unit:'%',colorSet:['#66bb6a','#ff7043','#ffd600','#42a5f5','#b0bec5'],
+   qs:[
+    {type:'read',tH:'<ruby>野菜<rt>やさい</rt></ruby>の<ruby>割合<rt>わりあい</rt></ruby>は<ruby>何<rt>なん</rt></ruby>%ですか？',ans:42,unit:'%',
+     hint:'<ruby>野菜<rt>やさい</rt></ruby>の<ruby>扇形<rt>おうぎがた</rt></ruby>を<ruby>確認<rt>かくにん</rt></ruby>しましょう。',expH:'<ruby>野菜<rt>やさい</rt></ruby>は42%です。'},
+    {type:'read',tH:'<ruby>米<rt>こめ</rt></ruby>と<ruby>果実<rt>かじつ</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせると<ruby>何<rt>なん</rt></ruby>%ですか？',ans:33,unit:'%',
+     hint:'15+18を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'15+18＝33%です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['野菜は全体の約4割','果実は米より少ない','畜産とその他の合計は25%','野菜と畜産を合わせると全体の半分以上'],
+     oh:{'野菜は全体の約4割':'<ruby>野菜<rt>やさい</rt></ruby>は<ruby>全体<rt>ぜんたい</rt></ruby>の<ruby>約<rt>やく</rt></ruby>4<ruby>割<rt>わり</rt></ruby>','果実は米より少ない':'<ruby>果実<rt>かじつ</rt></ruby>は<ruby>米<rt>こめ</rt></ruby>より<ruby>少<rt>すく</rt></ruby>ない','畜産とその他の合計は25%':'<ruby>畜産<rt>ちくさん</rt></ruby>とその他の<ruby>合計<rt>ごうけい</rt></ruby>は25%','野菜と畜産を合わせると全体の半分以上':'<ruby>野菜<rt>やさい</rt></ruby>と<ruby>畜産<rt>ちくさん</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせると<ruby>全体<rt>ぜんたい</rt></ruby>の<ruby>半分以上<rt>はんぶんいじょう</rt></ruby>'},
+     ans:'野菜と畜産を合わせると全体の半分以上',
+     hint:'42+20を<ruby>計算<rt>けいさん</rt></ruby>してみましょう。',expH:'42+20=62%で半分以上です。果実18%＞米15%なので②は誤り。20+5=25%で③は正しいです！'},
+   ]},
+  {grade:5,title:'電力の種類別割合',titleH:'<ruby>電力<rt>でんりょく</rt></ruby>の<ruby>種類別<rt>しゅるいべつ</rt></ruby><ruby>割合<rt>わりあい</rt></ruby>',
+   descH:'ある<ruby>国<rt>くに</rt></ruby>の<ruby>電力<rt>でんりょく</rt></ruby>を<ruby>どのように<rt></rt></ruby>つくっているかの<ruby>割合<rt>わりあい</rt></ruby>（%）',
+   chartType:'pie',labels:['火力','水力','原子力','太陽光','風力・その他'],
+   labH:['<ruby>火力<rt>かりょく</rt></ruby>','<ruby>水力<rt>すいりょく</rt></ruby>','<ruby>原子力<rt>げんしりょく</rt></ruby>','<ruby>太陽光<rt>たいようこう</rt></ruby>','<ruby>風力<rt>ふうりょく</rt></ruby>・その他'],
+   values:[62,8,6,14,10],unit:'%',colorSet:['#ef5350','#42a5f5','#ffd600','#ff7043','#66bb6a'],
+   qs:[
+    {type:'read',tH:'<ruby>太陽光<rt>たいようこう</rt></ruby>の<ruby>割合<rt>わりあい</rt></ruby>は<ruby>何<rt>なん</rt></ruby>%ですか？',ans:14,unit:'%',
+     hint:'太陽光の扇形を確認しましょう。',expH:'太陽光は14%です。'},
+    {type:'read',tH:'<ruby>再生可能エネルギー<rt>さいせいかのうエネルギー</rt></ruby>（<ruby>水力<rt>すいりょく</rt></ruby>＋<ruby>太陽光<rt>たいようこう</rt></ruby>＋<ruby>風力<rt>ふうりょく</rt></ruby>・その他）の<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>何<rt>なん</rt></ruby>%ですか？',ans:32,unit:'%',
+     hint:'8+14+10を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'8+14+10＝32%です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['火力は全体の半分以上を占める','太陽光は原子力の2倍以上','再生可能エネルギーは全体の3分の1未満','水力と原子力を合わせると太陽光より少ない'],
+     oh:{'火力は全体の半分以上を占める':'<ruby>火力<rt>かりょく</rt></ruby>は<ruby>全体<rt>ぜんたい</rt></ruby>の<ruby>半分以上<rt>はんぶんいじょう</rt></ruby>を<ruby>占<rt>し</rt></ruby>める','太陽光は原子力の2倍以上':'<ruby>太陽光<rt>たいようこう</rt></ruby>は<ruby>原子力<rt>げんしりょく</rt></ruby>の2<ruby>倍以上<rt>ばいいじょう</rt></ruby>','再生可能エネルギーは全体の3分の1未満':'<ruby>再生可能<rt>さいせいかのう</rt></ruby>エネルギーは<ruby>全体<rt>ぜんたい</rt></ruby>の3<ruby>分<rt>ぶん</rt></ruby>の1<ruby>未満<rt>みまん</rt></ruby>','水力と原子力を合わせると太陽光より少ない':'<ruby>水力<rt>すいりょく</rt></ruby>と<ruby>原子力<rt>げんしりょく</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせると<ruby>太陽光<rt>たいようこう</rt></ruby>より少ない'},
+     ans:'太陽光は原子力の2倍以上',
+     hint:'14÷6を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'14÷6≒2.33倍で2倍以上です。火力62%で半分以上なので①も正しい！再生可能32%＜33.3%で3分の1未満なので③も正しい！水力8+原子力6=14=太陽光14で同じなので④は誤りです。'},
+   ]},
+  {grade:6,title:'世界の大陸の面積の割合',titleH:'<ruby>世界<rt>せかい</rt></ruby>の<ruby>大陸<rt>たいりく</rt></ruby>の<ruby>面積<rt>めんせき</rt></ruby>の<ruby>割合<rt>わりあい</rt></ruby>',
+   descH:'<ruby>世界<rt>せかい</rt></ruby>の<ruby>大陸別<rt>たいりくべつ</rt></ruby><ruby>陸地面積<rt>りくちめんせき</rt></ruby>の<ruby>割合<rt>わりあい</rt></ruby>（%）',
+   chartType:'pie',labels:['アジア','アフリカ','北アメリカ','南アメリカ','南極','ヨーロッパ・その他'],
+   labH:['アジア','アフリカ','<ruby>北<rt>きた</rt></ruby>アメリカ','<ruby>南<rt>みなみ</rt></ruby>アメリカ','<ruby>南極<rt>なんきょく</rt></ruby>','ヨーロッパ・その他'],
+   values:[30,20,16,12,9,13],unit:'%',colorSet:['#ef5350','#ff7043','#42a5f5','#66bb6a','#90a4ae','#ab47bc'],
+   qs:[
+    {type:'read',tH:'アジアの<ruby>割合<rt>わりあい</rt></ruby>は<ruby>何<rt>なん</rt></ruby>%ですか？',ans:30,unit:'%',
+     hint:'アジアの扇形を確認しましょう。',expH:'アジアは30%です。'},
+    {type:'read',tH:'アジアとアフリカを<ruby>合<rt>あ</rt></ruby>わせると<ruby>何<rt>なん</rt></ruby>%ですか？',ans:50,unit:'%',
+     hint:'30+20を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'30+20＝50%でちょうど半分です。'},
+    {type:'choice',tH:'<ruby>南アメリカ<rt>みなみアメリカ</rt></ruby>は<ruby>北アメリカ<rt>きたアメリカ</rt></ruby>の<ruby>何分<rt>なんぶん</rt></ruby>の<ruby>何<rt>なん</rt></ruby>ですか？（<ruby>概数<rt>がいすう</rt></ruby>）',
+     opts:['約4分の3','約3分の2','約2分の1','約5分の4'],ans:'約4分の3',
+     hint:'12÷16＝0.75を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'12÷16＝0.75＝4分の3です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['アジアだけで全体の3割を占める','アフリカは南極の倍以上','3つの大陸(北米・南米・南極)の合計はアジアと同じ','ヨーロッパ・その他は南アメリカより多い'],
+     oh:{'アジアだけで全体の3割を占める':'アジアだけで<ruby>全体<rt>ぜんたい</rt></ruby>の3<ruby>割<rt>わり</rt></ruby>を<ruby>占<rt>し</rt></ruby>める','アフリカは南極の倍以上':'アフリカは<ruby>南極<rt>なんきょく</rt></ruby>の<ruby>倍以上<rt>ばいいじょう</rt></ruby>','3つの大陸(北米・南米・南極)の合計はアジアと同じ':'3つの<ruby>大陸<rt>たいりく</rt></ruby>(<ruby>北米<rt>きたべい</rt></ruby>・<ruby>南米<rt>なんべい</rt></ruby>・<ruby>南極<rt>なんきょく</rt></ruby>)の<ruby>合計<rt>ごうけい</rt></ruby>はアジアと<ruby>同<rt>おな</rt></ruby>じ','ヨーロッパ・その他は南アメリカより多い':'ヨーロッパ・その他は<ruby>南アメリカ<rt>みなみアメリカ</rt></ruby>より多い'},
+     ans:'アジアだけで全体の3割を占める',
+     hint:'30%＝3割を確認しましょう。',expH:'30%はちょうど3割です。アフリカ20÷南極9≒2.2倍で倍以上なので②も正しい！北米16+南米12+南極9=37≠アジア30なので③は誤り。ヨーロッパ13>南米12なので④も正しいです。'},
+   ]},
+],
+
+// ======================== 表 ========================
+table:[
+  {grade:3,title:'けがの種類と場所',titleH:'けがの<ruby>種類<rt>しゅるい</rt></ruby>と<ruby>場所<rt>ばしょ</rt></ruby>',
+   descH:'<ruby>先月<rt>せんげつ</rt></ruby>の<ruby>学校<rt>がっこう</rt></ruby>でのけが（<ruby>件<rt>けん</rt></ruby>）',
+   chartType:'table',
+   heads:['場所/種類','すりきず','切りきず','打ぼく','合計'],
+   headsH:['<ruby>場所<rt>ばしょ</rt></ruby>/<ruby>種類<rt>しゅるい</rt></ruby>','すりきず','<ruby>切<rt>き</rt></ruby>りきず','<ruby>打<rt>う</rt></ruby>ぼく','<ruby>合計<rt>ごうけい</rt></ruby>'],
+   rows:[['教室','3','2','1','6'],['運動場','8','4','5','17'],['廊下','1','1','2','4'],['合計','12','7','8','27']],
+   rowsH:[['<ruby>教室<rt>きょうしつ</rt></ruby>','3','2','1','6'],['<ruby>運動場<rt>うんどうじょう</rt></ruby>','8','4','5','17'],['<ruby>廊下<rt>ろうか</rt></ruby>','1','1','2','4'],['<ruby>合計<rt>ごうけい</rt></ruby>','12','7','8','27']],
+   qs:[
+    {type:'read',tH:'<ruby>運動場<rt>うんどうじょう</rt></ruby>のすりきずは<ruby>何件<rt>なんけん</rt></ruby>ですか？',ans:8,unit:'件',
+     hint:'「運動場」の行と「すりきず」の列が交わるところを読みましょう。',expH:'運動場のすりきずは8件です。'},
+    {type:'choice',tH:'けがが一番多かった場所はどこですか？',
+     opts:['教室','運動場','廊下','全部同じ'],ans:'運動場',
+     hint:'合計の列を見ましょう。',expH:'合計列：教室6、運動場17、廊下4で運動場が最多です。'},
+    {type:'read',tH:'<ruby>切<rt>き</rt></ruby>りきずの<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>何件<rt>なんけん</rt></ruby>ですか？',ans:7,unit:'件',
+     hint:'切りきずの列の合計行を読みましょう。',expH:'切りきずの合計は7件です。'},
+    {type:'analyze',tH:'<ruby>表<rt>ひょう</rt></ruby>から<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['全体で27件のけががあった','廊下は教室より多い','切りきずは打ぼくより多い','すりきずは全て運動場で起きた'],
+     oh:{'全体で27件のけががあった':'<ruby>全体<rt>ぜんたい</rt></ruby>で27<ruby>件<rt>けん</rt></ruby>のけががあった','廊下は教室より多い':'<ruby>廊下<rt>ろうか</rt></ruby>は<ruby>教室<rt>きょうしつ</rt></ruby>より多い','切りきずは打ぼくより多い':'<ruby>切<rt>き</rt></ruby>りきずは<ruby>打<rt>う</rt></ruby>ぼくより多い','すりきずは全て運動場で起きた':'すりきずは<ruby>全<rt>すべ</rt></ruby>て<ruby>運動場<rt>うんどうじょう</rt></ruby>で<ruby>起<rt>お</rt></ruby>きた'},
+     ans:'全体で27件のけががあった',
+     hint:'右下の合計の合計を読みましょう。',expH:'合計の合計は27件です。廊下4＜教室6なので②は誤り。切りきず7＜打ぼく8なので③も誤りです。'},
+   ]},
+  {grade:3,title:'好きな教科しらべ（男女別）',titleH:'<ruby>好<rt>す</rt></ruby>きな<ruby>教科<rt>きょうか</rt></ruby>しらべ（<ruby>男女別<rt>だんじょべつ</rt></ruby>）',
+   descH:'3年1<ruby>組<rt>くみ</rt></ruby>の<ruby>男女別<rt>だんじょべつ</rt></ruby>の<ruby>好<rt>す</rt></ruby>きな<ruby>教科<rt>きょうか</rt></ruby>です。',
+   chartType:'table',
+   heads:['教科','男子','女子','合計'],
+   headsH:['<ruby>教科<rt>きょうか</rt></ruby>','<ruby>男子<rt>だんし</rt></ruby>','<ruby>女子<rt>じょし</rt></ruby>','<ruby>合計<rt>ごうけい</rt></ruby>'],
+   rows:[['さんすう','10','7','17'],['こくご','5','11','16'],['たいいく','12','8','20'],['ずこう','4','9','13'],['合計','31','35','66']],
+   rowsH:[['さんすう','10','7','17'],['こくご','5','11','16'],['たいいく','12','8','20'],['ずこう','4','9','13'],['<ruby>合計<rt>ごうけい</rt></ruby>','31','35','66']],
+   qs:[
+    {type:'read',tH:'たいいくが<ruby>好<rt>す</rt></ruby>きな<ruby>男子<rt>だんし</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:12,unit:'人',
+     hint:'たいいくの<ruby>行<rt>ぎょう</rt></ruby>と<ruby>男子<rt>だんし</rt></ruby>の<ruby>列<rt>れつ</rt></ruby>が<ruby>交<rt>まじ</rt></ruby>わるところを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'たいいくの男子は12人です。'},
+    {type:'read',tH:'こくごが<ruby>好<rt>す</rt></ruby>きな<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:16,unit:'人',
+     hint:'こくごの<ruby>行<rt>ぎょう</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>の<ruby>列<rt>れつ</rt></ruby>を<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'こくごの合計は16人です。'},
+    {type:'choice',tH:'<ruby>女子<rt>じょし</rt></ruby>に一番<ruby>人気<rt>にんき</rt></ruby>の<ruby>教科<rt>きょうか</rt></ruby>はどれですか？',
+     opts:['さんすう','こくご','たいいく','ずこう'],ans:'こくご',
+     hint:'<ruby>女子<rt>じょし</rt></ruby>の<ruby>列<rt>れつ</rt></ruby>の<ruby>数<rt>かず</rt></ruby>を<ruby>比<rt>くら</rt></ruby>べましょう。',expH:'女子の列はこくご11人が最大です。'},
+    {type:'read',tH:'クラス<ruby>全体<rt>ぜんたい</rt></ruby>の<ruby>人数<rt>にんずう</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:66,unit:'人',
+     hint:'<ruby>合計<rt>ごうけい</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>を<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'合計の合計は66人です。'},
+    {type:'analyze',tH:'<ruby>表<rt>ひょう</rt></ruby>から<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['たいいくは男女とも一番多い','女子はこくごが一番多い','男子の合計は女子より少ない','ずこうは全体で一番少ない'],
+     oh:{'たいいくは男女とも一番多い':'たいいくは<ruby>男女<rt>だんじょ</rt></ruby>とも一番多い','女子はこくごが一番多い':'<ruby>女子<rt>じょし</rt></ruby>はこくごが一番多い','男子の合計は女子より少ない':'<ruby>男子<rt>だんし</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>女子<rt>じょし</rt></ruby>より少ない','ずこうは全体で一番少ない':'ずこうは<ruby>全体<rt>ぜんたい</rt></ruby>で一番少ない'},
+     ans:'男子の合計は女子より少ない',
+     hint:'<ruby>合計<rt>ごうけい</rt></ruby>の<ruby>行<rt>ぎょう</rt></ruby>を<ruby>見<rt>み</rt></ruby>ましょう。',expH:'男子31人＜女子35人です。女子の最多はこくご11人なので②も正しい！たいいくは男子12人が最多ですが女子はこくご11人が最多なので①は誤り。'},
+   ]},
+  {grade:3,title:'1週間の天気しらべ',titleH:'1<ruby>週間<rt>しゅうかん</rt></ruby>の<ruby>天気<rt>てんき</rt></ruby>しらべ',
+   descH:'4<ruby>週間<rt>しゅうかん</rt></ruby>（28<ruby>日間<rt>にちかん</rt></ruby>）の<ruby>天気<rt>てんき</rt></ruby>を<ruby>記録<rt>きろく</rt></ruby>しました。',
+   chartType:'table',
+   heads:['天気','1週','2週','3週','4週','合計'],
+   headsH:['<ruby>天気<rt>てんき</rt></ruby>','1<ruby>週<rt>しゅう</rt></ruby>','2<ruby>週<rt>しゅう</rt></ruby>','3<ruby>週<rt>しゅう</rt></ruby>','4<ruby>週<rt>しゅう</rt></ruby>','<ruby>合計<rt>ごうけい</rt></ruby>'],
+   rows:[['はれ','4','5','3','5','17'],['くもり','2','1','3','1','7'],['あめ','1','1','1','1','4'],['合計','7','7','7','7','28']],
+   rowsH:[['はれ','4','5','3','5','17'],['くもり','2','1','3','1','7'],['あめ','1','1','1','1','4'],['<ruby>合計<rt>ごうけい</rt></ruby>','7','7','7','7','28']],
+   qs:[
+    {type:'read',tH:'2<ruby>週<rt>しゅう</rt></ruby>のはれは<ruby>何日<rt>なんにち</rt></ruby>ですか？',ans:5,unit:'日',
+     hint:'はれの<ruby>行<rt>ぎょう</rt></ruby>と2<ruby>週<rt>しゅう</rt></ruby>の<ruby>列<rt>れつ</rt></ruby>が<ruby>交<rt>まじ</rt></ruby>わるところを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'2週のはれは5日です。'},
+    {type:'read',tH:'4<ruby>週間<rt>しゅうかん</rt></ruby>のはれの<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>何日<rt>なんにち</rt></ruby>ですか？',ans:17,unit:'日',
+     hint:'はれの<ruby>行<rt>ぎょう</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>の<ruby>列<rt>れつ</rt></ruby>を<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'はれの合計は17日です。'},
+    {type:'choice',tH:'3<ruby>週<rt>しゅう</rt></ruby>で一番<ruby>多<rt>おお</rt></ruby>かった<ruby>天気<rt>てんき</rt></ruby>はどれですか？',
+     opts:['はれ','くもり','あめ','全部同じ'],ans:'はれ',
+     hint:'3<ruby>週<rt>しゅう</rt></ruby>の<ruby>列<rt>れつ</rt></ruby>を<ruby>見<rt>み</rt></ruby>ましょう。はれ3、くもり3、あめ1です。',expH:'はれとくもりがともに3日で同数なので、はれが最多です。'},
+    {type:'read',tH:'28<ruby>日間<rt>にちかん</rt></ruby>のうちあめの<ruby>日<rt>ひ</rt></ruby>は<ruby>何日<rt>なんにち</rt></ruby>ですか？',ans:4,unit:'日',
+     hint:'あめの<ruby>行<rt>ぎょう</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>を<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'あめの合計は4日です。'},
+    {type:'analyze',tH:'<ruby>表<rt>ひょう</rt></ruby>から<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['毎週7日のデータがある','あめは毎週同じ日数','はれはくもりの2倍以上','28日間でくもりが一番多い'],
+     oh:{'毎週7日のデータがある':'<ruby>毎週<rt>まいしゅう</rt></ruby>7<ruby>日<rt>にち</rt></ruby>のデータがある','あめは毎週同じ日数':'あめは<ruby>毎週同<rt>まいしゅうおな</rt></ruby>じ<ruby>日数<rt>にっすう</rt></ruby>','はれはくもりの2倍以上':'はれはくもりの2<ruby>倍以上<rt>ばいいじょう</rt></ruby>','28日間でくもりが一番多い':'28<ruby>日間<rt>にちかん</rt></ruby>でくもりが一番多い'},
+     ans:'あめは毎週同じ日数',
+     hint:'あめの<ruby>行<rt>ぎょう</rt></ruby>の1〜4<ruby>週<rt>しゅう</rt></ruby>を<ruby>見<rt>み</rt></ruby>ましょう。',expH:'あめはすべての週で1日です。合計列を見ると各週7日なので①も正しい！はれ17÷くもり7≒2.43倍で2倍以上なので③も正しいです。'},
+   ]},
+  {grade:3,title:'文房具のもちもの調べ',titleH:'<ruby>文房具<rt>ぶんぼうぐ</rt></ruby>のもちもの<ruby>調<rt>しら</rt></ruby>べ',
+   descH:'クラスの<ruby>みんな<rt></rt></ruby>が<ruby>持<rt>も</rt></ruby>っている<ruby>文房具<rt>ぶんぼうぐ</rt></ruby>の<ruby>数<rt>かず</rt></ruby>（<ruby>本<rt>ほん</rt></ruby>）を<ruby>調<rt>しら</rt></ruby>べました。',
+   chartType:'table',
+   heads:['名前','えんぴつ','色えんぴつ','サインペン','合計'],
+   headsH:['<ruby>名前<rt>なまえ</rt></ruby>','えんぴつ','<ruby>色<rt>いろ</rt></ruby>えんぴつ','サインペン','<ruby>合計<rt>ごうけい</rt></ruby>'],
+   rows:[['たろう','6','12','4','22'],['はなこ','8','24','6','38'],['けんじ','5','16','0','21'],['合計','19','52','10','81']],
+   rowsH:[['たろう','6','12','4','22'],['はなこ','8','24','6','38'],['けんじ','5','16','0','21'],['<ruby>合計<rt>ごうけい</rt></ruby>','19','52','10','81']],
+   qs:[
+    {type:'read',tH:'はなこの<ruby>色<rt>いろ</rt></ruby>えんぴつは<ruby>何本<rt>なんぼん</rt></ruby>ですか？',ans:24,unit:'本',
+     hint:'はなこの<ruby>行<rt>ぎょう</rt></ruby>と<ruby>色<rt>いろ</rt></ruby>えんぴつの<ruby>列<rt>れつ</rt></ruby>が<ruby>交<rt>まじ</rt></ruby>わるところを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'はなこの色えんぴつは24本です。'},
+    {type:'read',tH:'3<ruby>人<rt>にん</rt></ruby>のえんぴつの<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>何本<rt>なんぼん</rt></ruby>ですか？',ans:19,unit:'本',
+     hint:'えんぴつの<ruby>列<rt>れつ</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>の<ruby>行<rt>ぎょう</rt></ruby>を<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'えんぴつの合計は19本です。'},
+    {type:'choice',tH:'<ruby>持<rt>も</rt></ruby>っている<ruby>文房具<rt>ぶんぼうぐ</rt></ruby>が一番<ruby>多<rt>おお</rt></ruby>いのはだれですか？',
+     opts:['たろう','はなこ','けんじ','全員同じ'],ans:'はなこ',
+     hint:'<ruby>合計<rt>ごうけい</rt></ruby>の<ruby>列<rt>れつ</rt></ruby>を<ruby>見<rt>み</rt></ruby>ましょう。',expH:'合計列：たろう22、はなこ38、けんじ21でははなこが最多です。'},
+    {type:'read',tH:'サインペンの<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>何本<rt>なんぼん</rt></ruby>ですか？',ans:10,unit:'本',
+     hint:'サインペンの<ruby>列<rt>れつ</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>を<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'サインペンの合計は10本です。'},
+    {type:'analyze',tH:'<ruby>表<rt>ひょう</rt></ruby>から<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['けんじはサインペンを持っていない','色えんぴつが一番多く持たれている','たろうとけんじの合計は同じくらい','はなこの色えんぴつはたろうの2倍'],
+     oh:{'けんじはサインペンを持っていない':'けんじはサインペンを<ruby>持<rt>も</rt></ruby>っていない','色えんぴつが一番多く持たれている':'<ruby>色<rt>いろ</rt></ruby>えんぴつが一番<ruby>多<rt>おお</rt></ruby>く<ruby>持<rt>も</rt></ruby>たれている','たろうとけんじの合計は同じくらい':'たろうとけんじの<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>同<rt>おな</rt></ruby>じくらい','はなこの色えんぴつはたろうの2倍':'はなこの<ruby>色<rt>いろ</rt></ruby>えんぴつはたろうの2<ruby>倍<rt>ばい</rt></ruby>'},
+     ans:'けんじはサインペンを持っていない',
+     hint:'けんじの<ruby>行<rt>ぎょう</rt></ruby>のサインペンの<ruby>列<rt>れつ</rt></ruby>を<ruby>見<rt>み</rt></ruby>ましょう。',expH:'けんじのサインペンは0本です。色えんぴつ合計52本が最多なので②も正しい！たろう22≒けんじ21でほぼ同じなので③も正しい！はなこ24÷たろう12＝2倍なので④も正しいです。'},
+   ]},
+  {grade:3,title:'給食の食べのこしらべ',titleH:'<ruby>給食<rt>きゅうしょく</rt></ruby>の<ruby>食<rt>た</rt></ruby>べのこしらべ',
+   descH:'1<ruby>週間<rt>しゅうかん</rt></ruby>の<ruby>給食<rt>きゅうしょく</rt></ruby>の<ruby>食<rt>た</rt></ruby>べのこし（<ruby>人数<rt>にんずう</rt></ruby>）を<ruby>記録<rt>きろく</rt></ruby>しました。',
+   chartType:'table',
+   heads:['曜日','ごはん','おかず','スープ','合計'],
+   headsH:['<ruby>曜日<rt>ようび</rt></ruby>','ごはん','おかず','スープ','<ruby>合計<rt>ごうけい</rt></ruby>'],
+   rows:[['月','3','5','2','10'],['火','1','3','1','5'],['水','4','6','3','13'],['木','2','4','1','7'],['金','0','2','0','2'],['合計','10','20','7','37']],
+   rowsH:[['<ruby>月<rt>げつ</rt></ruby>','3','5','2','10'],['<ruby>火<rt>か</rt></ruby>','1','3','1','5'],['<ruby>水<rt>すい</rt></ruby>','4','6','3','13'],['<ruby>木<rt>もく</rt></ruby>','2','4','1','7'],['<ruby>金<rt>きん</rt></ruby>','0','2','0','2'],['<ruby>合計<rt>ごうけい</rt></ruby>','10','20','7','37']],
+   qs:[
+    {type:'read',tH:'<ruby>水曜日<rt>すいようび</rt></ruby>のおかずを<ruby>食<rt>た</rt></ruby>べのこした<ruby>人<rt>にん</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:6,unit:'人',
+     hint:'<ruby>水<rt>すい</rt></ruby>の<ruby>行<rt>ぎょう</rt></ruby>とおかずの<ruby>列<rt>れつ</rt></ruby>が<ruby>交<rt>まじ</rt></ruby>わるところを<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'水曜日のおかずは6人です。'},
+    {type:'choice',tH:'<ruby>食<rt>た</rt></ruby>べのこしが一番<ruby>少<rt>すく</rt></ruby>なかった<ruby>曜日<rt>ようび</rt></ruby>はどれですか？',
+     opts:['火曜日','木曜日','金曜日','月曜日'],ans:'金曜日',
+     hint:'<ruby>合計<rt>ごうけい</rt></ruby>の<ruby>列<rt>れつ</rt></ruby>で一番<ruby>小<rt>ちい</rt></ruby>さい<ruby>数<rt>かず</rt></ruby>を<ruby>探<rt>さが</rt></ruby>しましょう。',expH:'金曜日の合計2人が最小です。'},
+    {type:'read',tH:'1<ruby>週間<rt>しゅうかん</rt></ruby>でごはんを<ruby>食<rt>た</rt></ruby>べのこした<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:10,unit:'人',
+     hint:'ごはんの<ruby>列<rt>れつ</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>の<ruby>行<rt>ぎょう</rt></ruby>を<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'ごはんの合計は10人です。'},
+    {type:'read',tH:'1<ruby>週間<rt>しゅうかん</rt></ruby>の<ruby>食<rt>た</rt></ruby>べのこしの<ruby>全合計<rt>ぜんごうけい</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:37,unit:'人',
+     hint:'<ruby>合計<rt>ごうけい</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>（<ruby>右下<rt>みぎした</rt></ruby>）を<ruby>読<rt>よ</rt></ruby>みましょう。',expH:'全合計は37人です。'},
+    {type:'analyze',tH:'<ruby>表<rt>ひょう</rt></ruby>から<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['水曜日が一番食べのこしが多い','金曜日はごはんを残した人がいない','おかずはスープの3倍近く残された','月曜日と木曜日の合計は同じ'],
+     oh:{'水曜日が一番食べのこしが多い':'<ruby>水曜日<rt>すいようび</rt></ruby>が一番<ruby>食<rt>た</rt></ruby>べのこしが多い','金曜日はごはんを残した人がいない':'<ruby>金曜日<rt>きんようび</rt></ruby>はごはんを<ruby>残<rt>のこ</rt></ruby>した<ruby>人<rt>ひと</rt></ruby>がいない','おかずはスープの3倍近く残された':'おかずはスープの3<ruby>倍近<rt>ばいちか</rt></ruby>く<ruby>残<rt>のこ</rt></ruby>された','月曜日と木曜日の合計は同じ':'<ruby>月曜日<rt>げつようび</rt></ruby>と<ruby>木曜日<rt>もくようび</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>同<rt>おな</rt></ruby>じ'},
+     ans:'水曜日が一番食べのこしが多い',
+     hint:'<ruby>合計<rt>ごうけい</rt></ruby>の<ruby>列<rt>れつ</rt></ruby>で一番<ruby>大<rt>おお</rt></ruby>きい<ruby>曜日<rt>ようび</rt></ruby>を<ruby>探<rt>さが</rt></ruby>しましょう。',expH:'水曜日の合計13人が最多です。金曜日のごはんは0人なので②も正しい！おかず20÷スープ7≒2.86倍で3倍近いので③も正しい！月曜日10≠木曜日7なので④は誤りです。'},
+   ]},
+  {grade:4,title:'都市の月別降水量',titleH:'<ruby>都市<rt>とし</rt></ruby>の<ruby>月別<rt>つきべつ</rt></ruby><ruby>降水量<rt>こうすいりょう</rt></ruby>',
+   descH:'2つの<ruby>都市<rt>とし</rt></ruby>の<ruby>月別<rt>つきべつ</rt></ruby><ruby>降水量<rt>こうすいりょう</rt></ruby>（mm）',
+   chartType:'table',
+   heads:['月','A市','B市','差(A-B)'],
+   headsH:['<ruby>月<rt>つき</rt></ruby>','A市','B市','<ruby>差<rt>さ</rt></ruby>(A-B)'],
+   rows:[['4月','85','60','25'],['5月','120','90','30'],['6月','160','110','50'],['7月','200','150','50'],['8月','180','130','50'],['9月','140','95','45']],
+   rowsH:[['4月','85','60','25'],['5月','120','90','30'],['6月','160','110','50'],['7月','200','150','50'],['8月','180','130','50'],['9月','140','95','45']],
+   qs:[
+    {type:'read',tH:'6月のA<ruby>市<rt>し</rt></ruby>の<ruby>降水量<rt>こうすいりょう</rt></ruby>は<ruby>何<rt>なん</rt></ruby>mmですか？',ans:160,unit:'mm',
+     hint:'6月の行、A市の列を読みましょう。',expH:'6月のA市は160mmです。'},
+    {type:'choice',tH:'A市とB市の差が最大の月はどれですか？',
+     opts:['5月','6月','7月','8月'],ans:'6月',
+     hint:'差の列を見て、一番大きな数字を探しましょう。',expH:'6・7・8月がともに50mmで最大ですが、選択肢には6月があります。'},
+    {type:'read',tH:'4月から9月のA<ruby>市<rt>し</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby><ruby>降水量<rt>こうすいりょう</rt></ruby>は<ruby>何<rt>なん</rt></ruby>mmですか？',ans:885,unit:'mm',
+     hint:'85+120+160+200+180+140を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'85+120+160+200+180+140＝885mmです。'},
+    {type:'analyze',tH:'<ruby>表<rt>ひょう</rt></ruby>から<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['どの月もA市の方がB市より多い','A市の降水量は7月が最多','9月の差は50mm','B市の降水量は常に増え続けた'],
+     oh:{'どの月もA市の方がB市より多い':'どの<ruby>月<rt>つき</rt></ruby>もA<ruby>市<rt>し</rt></ruby>の方がB<ruby>市<rt>し</rt></ruby>より多い','A市の降水量は7月が最多':'A<ruby>市<rt>し</rt></ruby>の<ruby>降水量<rt>こうすいりょう</rt></ruby>は7月が<ruby>最多<rt>さいた</rt></ruby>','9月の差は50mm':'9月の<ruby>差<rt>さ</rt></ruby>は50mm','B市の降水量は常に増え続けた':'B<ruby>市<rt>し</rt></ruby>の<ruby>降水量<rt>こうすいりょう</rt></ruby>は<ruby>常<rt>つね</rt></ruby>に<ruby>増<rt>ふ</rt></ruby>え<ruby>続<rt>つづ</rt></ruby>けた'},
+     ans:'どの月もA市の方がB市より多い',
+     hint:'差(A-B)が全て正の値かを確認しましょう。',expH:'差が全て正なのでA市が常に多いです。A市最多は7月200mmなので②は正しい！9月の差は45mmなので③は誤り。'},
+   ]},
+  {grade:5,title:'クラスの身長体重記録',titleH:'クラスの<ruby>身長<rt>しんちょう</rt></ruby>・<ruby>体重<rt>たいじゅう</rt></ruby><ruby>記録<rt>きろく</rt></ruby>',
+   descH:'5年1<ruby>組<rt>くみ</rt></ruby>の<ruby>身長<rt>しんちょう</rt></ruby>（cm）・<ruby>体重<rt>たいじゅう</rt></ruby>（kg）の<ruby>平均<rt>へいきん</rt></ruby>',
+   chartType:'table',
+   heads:['学期','平均身長(cm)','平均体重(kg)','前学期比(身長)'],
+   headsH:['<ruby>学期<rt>がっき</rt></ruby>','<ruby>平均身長<rt>へいきんしんちょう</rt></ruby>(cm)','<ruby>平均体重<rt>へいきんたいじゅう</rt></ruby>(kg)','<ruby>前学期比<rt>まえがっきひ</rt></ruby>(<ruby>身長<rt>しんちょう</rt></ruby>)'],
+   rows:[['4月(1学期)','141.2','35.8','—'],['9月(2学期)','142.8','36.5','+1.6'],['1月(3学期)','144.1','37.0','+1.3']],
+   rowsH:[['4月(1<ruby>学期<rt>がっき</rt></ruby>)','141.2','35.8','—'],['9月(2<ruby>学期<rt>がっき</rt></ruby>)','142.8','36.5','+1.6'],['1月(3<ruby>学期<rt>がっき</rt></ruby>)','144.1','37.0','+1.3']],
+   qs:[
+    {type:'read',tH:'2<ruby>学期<rt>がっき</rt></ruby>の<ruby>平均身長<rt>へいきんしんちょう</rt></ruby>は<ruby>何<rt>なん</rt></ruby>cmですか？',ans:142.8,unit:'cm',
+     hint:'9月(2学期)の行の身長を読みましょう。',expH:'2学期の平均身長は142.8cmです。'},
+    {type:'read',tH:'1<ruby>年間<rt>ねんかん</rt></ruby>で<ruby>身長<rt>しんちょう</rt></ruby>は<ruby>何<rt>なん</rt></ruby>cm<ruby>伸<rt>の</rt></ruby>びましたか？',ans:2.9,unit:'cm',
+     hint:'144.1－141.2を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'144.1－141.2＝2.9cmです。'},
+    {type:'analyze',tH:'<ruby>表<rt>ひょう</rt></ruby>から<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['身長は毎学期同じ量だけ伸びた','体重は1年間で1.2kg増えた','1学期から2学期の方が伸びが大きい','3学期の平均身長は144cmを超えた'],
+     oh:{'身長は毎学期同じ量だけ伸びた':'<ruby>身長<rt>しんちょう</rt></ruby>は<ruby>毎学期<rt>まいがっき</rt></ruby><ruby>同<rt>おな</rt></ruby>じ<ruby>量<rt>りょう</rt></ruby>だけ<ruby>伸<rt>の</rt></ruby>びた','体重は1年間で1.2kg増えた':'<ruby>体重<rt>たいじゅう</rt></ruby>は1<ruby>年間<rt>ねんかん</rt></ruby>で1.2kg<ruby>増<rt>ふ</rt></ruby>えた','1学期から2学期の方が伸びが大きい':'1<ruby>学期<rt>がっき</rt></ruby>から2<ruby>学期<rt>がっき</rt></ruby>の方が<ruby>伸<rt>の</rt></ruby>びが<ruby>大<rt>おお</rt></ruby>きい','3学期の平均身長は144cmを超えた':'3<ruby>学期<rt>がっき</rt></ruby>の<ruby>平均身長<rt>へいきんしんちょう</rt></ruby>は144cmを<ruby>超<rt>こ</rt></ruby>えた'},
+     ans:'1学期から2学期の方が伸びが大きい',
+     hint:'前学期比の列を見ましょう。',expH:'+1.6cm（1→2学期）＞+1.3cm（2→3学期）なので1→2学期の方が大きい。体重は37.0－35.8＝1.2kgなので②も正しい！3学期は144.1cmで144cmを超えているので④も正しいです。'},
+   ]},
+  {grade:6,title:'都道府県別農業データ',titleH:'<ruby>都道府県別<rt>とどうふけんべつ</rt></ruby><ruby>農業<rt>のうぎょう</rt></ruby>データ',
+   descH:'4<ruby>都道府県<rt>とどうふけん</rt></ruby>の<ruby>農業<rt>のうぎょう</rt></ruby><ruby>関連<rt>かんれん</rt></ruby>データ',
+   chartType:'table',
+   heads:['都道府県','耕地面積(千ha)','農家数(千戸)','産出額(億円)'],
+   headsH:['<ruby>都道府県<rt>とどうふけん</rt></ruby>','<ruby>耕地面積<rt>こうちめんせき</rt></ruby>(千ha)','<ruby>農家数<rt>のうかすう</rt></ruby>(千<ruby>戸<rt>こ</rt></ruby>)','<ruby>産出額<rt>さんしゅつがく</rt></ruby>(<ruby>億円<rt>おくえん</rt></ruby>)'],
+   rows:[['北海道','1152','44','12000'],['茨城県','167','63','4500'],['千葉県','124','54','3800'],['熊本県','68','58','3400']],
+   rowsH:[['<ruby>北海道<rt>ほっかいどう</rt></ruby>','1152','44','12000'],['<ruby>茨城県<rt>いばらきけん</rt></ruby>','167','63','4500'],['<ruby>千葉県<rt>ちばけん</rt></ruby>','124','54','3800'],['<ruby>熊本県<rt>くまもとけん</rt></ruby>','68','58','3400']],
+   qs:[
+    {type:'read',tH:'<ruby>茨城県<rt>いばらきけん</rt></ruby>の<ruby>農家数<rt>のうかすう</rt></ruby>は<ruby>何千戸<rt>なんせんこ</rt></ruby>ですか？',ans:63,unit:'千戸',
+     hint:'茨城県の行、農家数の列を読みましょう。',expH:'茨城県の農家数は63千戸です。'},
+    {type:'read',tH:'<ruby>北海道<rt>ほっかいどう</rt></ruby>の<ruby>耕地面積<rt>こうちめんせき</rt></ruby>は<ruby>千葉県<rt>ちばけん</rt></ruby>の<ruby>約何倍<rt>やくなんばい</rt></ruby>ですか？（<ruby>整数<rt>せいすう</rt></ruby>で）',ans:9,unit:'倍',
+     hint:'1152÷124を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'1152÷124≒9.3で約9倍です。'},
+    {type:'analyze',tH:'<ruby>表<rt>ひょう</rt></ruby>から<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['4都道府県の産出額の合計は2兆円超','耕地面積が広いほど農家数も多い','農家数が一番多いのは茨城県','北海道の産出額は残り3県の合計より多い'],
+     oh:{'4都道府県の産出額の合計は2兆円超':'4<ruby>都道府県<rt>とどうふけん</rt></ruby>の<ruby>産出額<rt>さんしゅつがく</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>は2<ruby>兆円超<rt>ちょうえんちょう</rt></ruby>','耕地面積が広いほど農家数も多い':'<ruby>耕地面積<rt>こうちめんせき</rt></ruby>が広いほど<ruby>農家数<rt>のうかすう</rt></ruby>も多い','農家数が一番多いのは茨城県':'<ruby>農家数<rt>のうかすう</rt></ruby>が一番多いのは<ruby>茨城県<rt>いばらきけん</rt></ruby>','北海道の産出額は残り3県の合計より多い':'<ruby>北海道<rt>ほっかいどう</rt></ruby>の<ruby>産出額<rt>さんしゅつがく</rt></ruby>は<ruby>残<rt>のこ</rt></ruby>り3<ruby>県<rt>けん</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>より多い'},
+     ans:'4都道府県の産出額の合計は2兆円超',
+     hint:'12000+4500+3800+3400を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'合計23700億円＝2兆3700億円で2兆円超です。農家数最大は茨城県63千戸なので③は正しい！北海道12000＜残り11700なので④は誤りです。'},
+   ]},
+  {grade:3,title:'図書室の本の貸し出し数',titleH:'<ruby>図書室<rt>としょしつ</rt></ruby>の<ruby>本<rt>ほん</rt></ruby>の<ruby>貸<rt>か</rt></ruby>し<ruby>出<rt>だ</rt></ruby>し<ruby>数<rt>かず</rt></ruby>',
+   descH:'1<ruby>週間<rt>しゅうかん</rt></ruby>の<ruby>図書室<rt>としょしつ</rt></ruby>の<ruby>本<rt>ほん</rt></ruby>の<ruby>貸<rt>か</rt></ruby>し<ruby>出<rt>だ</rt></ruby>し<ruby>数<rt>かず</rt></ruby>（<ruby>冊<rt>さつ</rt></ruby>）',
+   chartType:'table',
+   heads:['学年','月','火','水','木','金','合計'],
+   headsH:['<ruby>学年<rt>がくねん</rt></ruby>','<ruby>月<rt>げつ</rt></ruby>','<ruby>火<rt>か</rt></ruby>','<ruby>水<rt>すい</rt></ruby>','<ruby>木<rt>もく</rt></ruby>','<ruby>金<rt>きん</rt></ruby>','<ruby>合計<rt>ごうけい</rt></ruby>'],
+   rows:[['1・2年','5','3','6','4','2','20'],['3・4年','8','7','10','6','4','35'],['5・6年','6','5','8','7','3','29'],['合計','19','15','24','17','9','84']],
+   rowsH:[['1・2年','5','3','6','4','2','20'],['3・4年','8','7','10','6','4','35'],['5・6年','6','5','8','7','3','29'],['<ruby>合計<rt>ごうけい</rt></ruby>','19','15','24','17','9','84']],
+   qs:[
+    {type:'read',tH:'3・4年の<ruby>水曜日<rt>すいようび</rt></ruby>の<ruby>貸<rt>か</rt></ruby>し<ruby>出<rt>だ</rt></ruby>し<ruby>数<rt>かず</rt></ruby>は<ruby>何冊<rt>なんさつ</rt></ruby>ですか？',ans:10,unit:'冊',
+     hint:'3・4年の行と水の列が交わるところを読みましょう。',expH:'3・4年の水曜日は10冊です。'},
+    {type:'read',tH:'1<ruby>週間<rt>しゅうかん</rt></ruby>で<ruby>全部<rt>ぜんぶ</rt></ruby>で<ruby>何冊<rt>なんさつ</rt></ruby><ruby>貸<rt>か</rt></ruby>し<ruby>出<rt>だ</rt></ruby>されましたか？',ans:84,unit:'冊',
+     hint:'右下の合計の合計を読みましょう。',expH:'全体の合計は84冊です。'},
+    {type:'choice',tH:'<ruby>一番多<rt>いちばんおお</rt></ruby>く<ruby>本<rt>ほん</rt></ruby>が<ruby>借<rt>か</rt></ruby>りられた<ruby>曜日<rt>ようび</rt></ruby>はどれですか？',
+     opts:['月曜日','火曜日','水曜日','木曜日'],ans:'水曜日',
+     hint:'合計行を見て一番大きい数字の列を探しましょう。',expH:'合計行は月19、火15、水24、木17、金9で水曜日が最多です。'},
+    {type:'analyze',tH:'<ruby>表<rt>ひょう</rt></ruby>から<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['3・4年が一番多く本を借りた','金曜日はどの学年でも一番少ない','1・2年の合計は5・6年より少ない','水曜日の合計は金曜日の約2.7倍'],
+     oh:{'3・4年が一番多く本を借りた':'3・4年が一番<ruby>多<rt>おお</rt></ruby>く<ruby>本<rt>ほん</rt></ruby>を<ruby>借<rt>か</rt></ruby>りた','金曜日はどの学年でも一番少ない':'<ruby>金曜日<rt>きんようび</rt></ruby>はどの<ruby>学年<rt>がくねん</rt></ruby>でも一番少ない','1・2年の合計は5・6年より少ない':'1・2年の<ruby>合計<rt>ごうけい</rt></ruby>は5・6年より少ない','水曜日の合計は金曜日の約2.7倍':'<ruby>水曜日<rt>すいようび</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>は<ruby>金曜日<rt>きんようび</rt></ruby>の<ruby>約<rt>やく</rt></ruby>2.7<ruby>倍<rt>ばい</rt></ruby>'},
+     ans:'3・4年が一番多く本を借りた',
+     hint:'合計列を見て一番大きい学年を探しましょう。',expH:'3・4年の合計35冊が最多です。金曜日：1・2年2冊、3・4年4冊、5・6年3冊でいずれも最少なので②も正しい！24÷9≒2.67倍で約2.7倍なので④も正しいです。'},
+   ]},
+  {grade:4,title:'2クラスのテスト結果比較',titleH:'2クラスのテスト<ruby>結果<rt>けっか</rt></ruby><ruby>比較<rt>ひかく</rt></ruby>',
+   descH:'1<ruby>組<rt>くみ</rt></ruby>と2<ruby>組<rt>くみ</rt></ruby>のテスト<ruby>得点分布<rt>とくてんぶんぷ</rt></ruby>（<ruby>人<rt>にん</rt></ruby>）',
+   chartType:'table',
+   heads:['得点','1組','2組','合計'],
+   headsH:['<ruby>得点<rt>とくてん</rt></ruby>','1<ruby>組<rt>くみ</rt></ruby>','2<ruby>組<rt>くみ</rt></ruby>','<ruby>合計<rt>ごうけい</rt></ruby>'],
+   rows:[['90点以上','5','8','13'],['70〜89点','12','14','26'],['50〜69点','10','8','18'],['50点未満','3','2','5'],['合計','30','32','62']],
+   rowsH:[['90<ruby>点以上<rt>てんいじょう</rt></ruby>','5','8','13'],['70〜89<ruby>点<rt>てん</rt></ruby>','12','14','26'],['50〜69<ruby>点<rt>てん</rt></ruby>','10','8','18'],['50<ruby>点未満<rt>てんみまん</rt></ruby>','3','2','5'],['<ruby>合計<rt>ごうけい</rt></ruby>','30','32','62']],
+   qs:[
+    {type:'read',tH:'2<ruby>組<rt>くみ</rt></ruby>で90<ruby>点以上<rt>てんいじょう</rt></ruby>とった<ruby>人<rt>にん</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:8,unit:'人',
+     hint:'90点以上の行と2組の列が交わるところを読みましょう。',expH:'2組の90点以上は8人です。'},
+    {type:'read',tH:'1<ruby>組<rt>くみ</rt></ruby>で70<ruby>点以上<rt>てんいじょう</rt></ruby>とった<ruby>人<rt>にん</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:17,unit:'人',
+     hint:'1組の90点以上＋70〜89点を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'5+12＝17人です。'},
+    {type:'choice',tH:'2<ruby>組<rt>くみ</rt></ruby>の<ruby>中<rt>なか</rt></ruby>で一番<ruby>多<rt>おお</rt></ruby>い<ruby>得点層<rt>とくてんそう</rt></ruby>はどれですか？',
+     opts:['90点以上','70〜89点','50〜69点','50点未満'],ans:'70〜89点',
+     hint:'2組の列の数字を比べましょう。',expH:'2組：90点以上8人、70〜89点14人、50〜69点8人、50点未満2人で70〜89点が最多です。'},
+    {type:'analyze',tH:'<ruby>表<rt>ひょう</rt></ruby>から<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['2組の方が1組より平均点が高そう','1組は2組より人数が多い','50点未満は両クラス合わせて5人','70点以上の合計は40人以下'],
+     oh:{'2組の方が1組より平均点が高そう':'2<ruby>組<rt>くみ</rt></ruby>の方が1<ruby>組<rt>くみ</rt></ruby>より<ruby>平均点<rt>へいきんてん</rt></ruby>が<ruby>高<rt>たか</rt></ruby>そう','1組は2組より人数が多い':'1<ruby>組<rt>くみ</rt></ruby>は2<ruby>組<rt>くみ</rt></ruby>より<ruby>人数<rt>にんずう</rt></ruby>が<ruby>多<rt>おお</rt></ruby>い','50点未満は両クラス合わせて5人':'50<ruby>点未満<rt>てんみまん</rt></ruby>は<ruby>両<rt>りょう</rt></ruby>クラス<ruby>合<rt>あ</rt></ruby>わせて5<ruby>人<rt>にん</rt></ruby>','70点以上の合計は40人以下':'70<ruby>点以上<rt>てんいじょう</rt></ruby>の<ruby>合計<rt>ごうけい</rt></ruby>は40<ruby>人以下<rt>にんいか</rt></ruby>'},
+     ans:'50点未満は両クラス合わせて5人',
+     hint:'50点未満の行の合計を確認しましょう。',expH:'50点未満の合計は5人です。1組30人＜2組32人なので②は誤り。70点以上＝13+26＝39人で40人以下なので④も正しい！2組は90点以上が多く平均が高そうなので①も正しいです。'},
+   ]},
+  {grade:5,title:'関東地方の人口データ',titleH:'<ruby>関東地方<rt>かんとうちほう</rt></ruby>の<ruby>人口<rt>じんこう</rt></ruby>データ',
+   descH:'<ruby>関東地方<rt>かんとうちほう</rt></ruby>の<ruby>人口<rt>じんこう</rt></ruby>（<ruby>万人<rt>まんにん</rt></ruby>）と<ruby>面積<rt>めんせき</rt></ruby>（km²）',
+   chartType:'table',
+   heads:['都県','人口(万人)','面積(km²)','人口密度(人/km²)'],
+   headsH:['<ruby>都県<rt>とけん</rt></ruby>','<ruby>人口<rt>じんこう</rt></ruby>(<ruby>万人<rt>まんにん</rt></ruby>)','<ruby>面積<rt>めんせき</rt></ruby>(km²)','<ruby>人口密度<rt>じんこうみつど</rt></ruby>(<ruby>人<rt>にん</rt></ruby>/km²)'],
+   rows:[['東京都','1404','2194','6400'],['神奈川','924','2416','3824'],['埼玉県','734','3798','1932'],['千葉県','628','5158','1217'],['茨城県','288','6097','472']],
+   rowsH:[['<ruby>東京都<rt>とうきょうと</rt></ruby>','1404','2194','6400'],['<ruby>神奈川<rt>かながわ</rt></ruby>','924','2416','3824'],['<ruby>埼玉県<rt>さいたまけん</rt></ruby>','734','3798','1932'],['<ruby>千葉県<rt>ちばけん</rt></ruby>','628','5158','1217'],['<ruby>茨城県<rt>いばらきけん</rt></ruby>','288','6097','472']],
+   qs:[
+    {type:'read',tH:'<ruby>千葉県<rt>ちばけん</rt></ruby>の<ruby>人口<rt>じんこう</rt></ruby>は<ruby>何万人<rt>なんまんにん</rt></ruby>ですか？',ans:628,unit:'万人',
+     hint:'千葉県の行の人口列を読みましょう。',expH:'千葉県は628万人です。'},
+    {type:'read',tH:'<ruby>東京都<rt>とうきょうと</rt></ruby>と<ruby>茨城県<rt>いばらきけん</rt></ruby>の<ruby>人口<rt>じんこう</rt></ruby>の<ruby>差<rt>さ</rt></ruby>は<ruby>何万人<rt>なんまんにん</rt></ruby>ですか？',ans:1116,unit:'万人',
+     hint:'1404－288を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'1404－288＝1116万人です。'},
+    {type:'choice',tH:'<ruby>面積<rt>めんせき</rt></ruby>が<ruby>最大<rt>さいだい</rt></ruby>の<ruby>都県<rt>とけん</rt></ruby>はどれですか？',
+     opts:['東京都','埼玉県','千葉県','茨城県'],ans:'茨城県',
+     hint:'面積の列の一番大きい数字を探しましょう。',expH:'茨城県の6097km²が最大です。'},
+    {type:'analyze',tH:'<ruby>表<rt>ひょう</rt></ruby>から<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['面積が広いほど人口密度が低い','東京都の人口密度は茨城県の約13倍','神奈川と埼玉の人口を合わせると東京を超える','千葉は面積の割に人口密度が高い'],
+     oh:{'面積が広いほど人口密度が低い':'<ruby>面積<rt>めんせき</rt></ruby>が<ruby>広<rt>ひろ</rt></ruby>いほど<ruby>人口密度<rt>じんこうみつど</rt></ruby>が<ruby>低<rt>ひく</rt></ruby>い','東京都の人口密度は茨城県の約13倍':'<ruby>東京都<rt>とうきょうと</rt></ruby>の<ruby>人口密度<rt>じんこうみつど</rt></ruby>は<ruby>茨城県<rt>いばらきけん</rt></ruby>の<ruby>約<rt>やく</rt></ruby>13<ruby>倍<rt>ばい</rt></ruby>','神奈川と埼玉の人口を合わせると東京を超える':'<ruby>神奈川<rt>かながわ</rt></ruby>と<ruby>埼玉<rt>さいたま</rt></ruby>の<ruby>人口<rt>じんこう</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせると<ruby>東京<rt>とうきょう</rt></ruby>を<ruby>超<rt>こ</rt></ruby>える','千葉は面積の割に人口密度が高い':'<ruby>千葉<rt>ちば</rt></ruby>は<ruby>面積<rt>めんせき</rt></ruby>の<ruby>割<rt>わり</rt></ruby>に<ruby>人口密度<rt>じんこうみつど</rt></ruby>が<ruby>高<rt>たか</rt></ruby>い'},
+     ans:'東京都の人口密度は茨城県の約13倍',
+     hint:'6400÷472を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'6400÷472≒13.6倍で約13倍です。神奈川924+埼玉734=1658万人＞東京1404万人なので③も正しい！'},
+   ]},
+  {grade:6,title:'世界の国別GDPデータ',titleH:'<ruby>世界<rt>せかい</rt></ruby>の<ruby>国別<rt>くにべつ</rt></ruby>GDPデータ',
+   descH:'<ruby>主要国<rt>しゅようこく</rt></ruby>のGDP（<ruby>兆円<rt>ちょうえん</rt></ruby>）・<ruby>人口<rt>じんこう</rt></ruby>（<ruby>億人<rt>おくにん</rt></ruby>）・<ruby>一人当たりGDP<rt>ひとりあたりGDP</rt></ruby>（<ruby>万円<rt>まんえん</rt></ruby>）',
+   chartType:'table',
+   heads:['国名','GDP(兆円)','人口(億人)','1人あたりGDP(万円)'],
+   headsH:['<ruby>国名<rt>くにめい</rt></ruby>','GDP(<ruby>兆円<rt>ちょうえん</rt></ruby>)','<ruby>人口<rt>じんこう</rt></ruby>(<ruby>億人<rt>おくにん</rt></ruby>)','1<ruby>人<rt>にん</rt></ruby>あたりGDP(<ruby>万円<rt>まんえん</rt></ruby>)'],
+   rows:[['アメリカ','3000','3.3','909'],['中国','1800','14.0','129'],['日本','550','1.3','423'],['ドイツ','480','0.8','600'],['インド','380','14.2','27']],
+   rowsH:[['アメリカ','3000','3.3','909'],['<ruby>中国<rt>ちゅうごく</rt></ruby>','1800','14.0','129'],['<ruby>日本<rt>にほん</rt></ruby>','550','1.3','423'],['ドイツ','480','0.8','600'],['インド','380','14.2','27']],
+   qs:[
+    {type:'read',tH:'<ruby>日本<rt>にほん</rt></ruby>のGDPは<ruby>何兆円<rt>なんちょうえん</rt></ruby>ですか？',ans:550,unit:'兆円',
+     hint:'日本の行のGDPの列を読みましょう。',expH:'日本のGDPは550兆円です。'},
+    {type:'read',tH:'アメリカの1<ruby>人<rt>にん</rt></ruby>あたりGDPは<ruby>中国<rt>ちゅうごく</rt></ruby>の<ruby>約何倍<rt>やくなんばい</rt></ruby>ですか？（<ruby>整数<rt>せいすう</rt></ruby>で）',ans:7,unit:'倍',
+     hint:'909÷129≒7を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'909÷129≒7.0倍で約7倍です。'},
+    {type:'choice',tH:'GDPが<ruby>高<rt>たか</rt></ruby>い<ruby>国<rt>くに</rt></ruby>ほど1<ruby>人<rt>にん</rt></ruby>あたりGDPも<ruby>高<rt>たか</rt></ruby>いといえますか？',
+     opts:['いえる','いえない','どちらとも言えない','表だけでは判断できない'],ans:'いえない',
+     hint:'中国はGDP2位だが1人あたりGDPは何位か確認しましょう。',expH:'中国はGDP2位ですが1人あたりGDPは129万円で4位です。GDPの高さと1人あたりGDPは必ずしも比例しません。'},
+    {type:'analyze',tH:'<ruby>表<rt>ひょう</rt></ruby>から<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['人口が多いほど1人あたりGDPが低い傾向がある','ドイツは日本より人口が少ないが1人あたりGDPが高い','5か国のGDP合計は6000兆円を超える','インドのGDPはアメリカの10分の1以下'],
+     oh:{'人口が多いほど1人あたりGDPが低い傾向がある':'<ruby>人口<rt>じんこう</rt></ruby>が<ruby>多<rt>おお</rt></ruby>いほど1<ruby>人<rt>にん</rt></ruby>あたりGDPが<ruby>低<rt>ひく</rt></ruby>い<ruby>傾向<rt>けいこう</rt></ruby>がある','ドイツは日本より人口が少ないが1人あたりGDPが高い':'ドイツは<ruby>日本<rt>にほん</rt></ruby>より<ruby>人口<rt>じんこう</rt></ruby>が<ruby>少<rt>すく</rt></ruby>ないが1<ruby>人<rt>にん</rt></ruby>あたりGDPが<ruby>高<rt>たか</rt></ruby>い','5か国のGDP合計は6000兆円を超える':'5か<ruby>国<rt>くに</rt></ruby>のGDP<ruby>合計<rt>ごうけい</rt></ruby>は6000<ruby>兆円<rt>ちょうえん</rt></ruby>を<ruby>超<rt>こ</rt></ruby>える','インドのGDPはアメリカの10分の1以下':'インドのGDPはアメリカの10<ruby>分<rt>ぶん</rt></ruby>の1<ruby>以下<rt>いか</rt></ruby>'},
+     ans:'ドイツは日本より人口が少ないが1人あたりGDPが高い',
+     hint:'ドイツと日本の人口列と1人あたりGDP列を比べましょう。',expH:'ドイツ人口0.8億人＜日本1.3億人、ドイツ1人あたり600万円＞日本423万円です。5か国GDP合計：3000+1800+550+480+380=6210兆円で6000超なので③も正しい！インド380÷アメリカ3000≒0.127で10分の1(300兆円)以上なので④は誤りです。'},
+   ]},
+],
+
+// ======================== 複合グラフ ========================
+combo:[
+  {grade:6,title:'月別気温と降水量',titleH:'<ruby>月別<rt>つきべつ</rt></ruby><ruby>気温<rt>きおん</rt></ruby>と<ruby>降水量<rt>こうすいりょう</rt></ruby>',
+   descH:'ある<ruby>都市<rt>とし</rt></ruby>の<ruby>月別<rt>つきべつ</rt></ruby><ruby>気温<rt>きおん</rt></ruby>（<ruby>折<rt>お</rt></ruby>れ<ruby>線<rt>せん</rt></ruby>）と<ruby>降水量<rt>こうすいりょう</rt></ruby>（<ruby>棒<rt>ぼう</rt></ruby>）',
+   chartType:'combo',labels:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
+   barValues:[45,55,95,110,130,155,175,160,140,90,70,50],lineValues:[5,6,10,15,20,24,28,29,25,18,12,7],
+   qs:[
+    {type:'read',tH:'8月の<ruby>気温<rt>きおん</rt></ruby>は<ruby>何度<rt>なんど</rt></ruby>ですか？',ans:29,unit:'℃',
+     hint:'折れ線グラフの8月の点を読みましょう。',expH:'折れ線の8月は29℃です。'},
+    {type:'read',tH:'7月の<ruby>降水量<rt>こうすいりょう</rt></ruby>は<ruby>何<rt>なん</rt></ruby>mmですか？',ans:175,unit:'mm',
+     hint:'棒グラフの7月の高さを読みましょう。',expH:'棒グラフの7月は175mmです。'},
+    {type:'choice',tH:'<ruby>気温<rt>きおん</rt></ruby>が一番高い<ruby>月<rt>つき</rt></ruby>はどれですか？',
+     opts:['7月','8月','9月','6月'],ans:'8月',
+     hint:'折れ線グラフの一番高い点を探しましょう。',expH:'折れ線の最高点は8月の29℃です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['気温が高い月ほど降水量も多い傾向がある','気温が最高の月と降水量が最多の月は同じ','12月の降水量は1月より多い','冬は気温・降水量ともに低い'],
+     oh:{'気温が高い月ほど降水量も多い傾向がある':'<ruby>気温<rt>きおん</rt></ruby>が高い<ruby>月<rt>つき</rt></ruby>ほど<ruby>降水量<rt>こうすいりょう</rt></ruby>も多い<ruby>傾向<rt>けいこう</rt></ruby>がある','気温が最高の月と降水量が最多の月は同じ':'<ruby>気温<rt>きおん</rt></ruby>が<ruby>最高<rt>さいこう</rt></ruby>の<ruby>月<rt>つき</rt></ruby>と<ruby>降水量<rt>こうすいりょう</rt></ruby>が<ruby>最多<rt>さいた</rt></ruby>の<ruby>月<rt>つき</rt></ruby>は<ruby>同<rt>おな</rt></ruby>じ','12月の降水量は1月より多い':'12月の<ruby>降水量<rt>こうすいりょう</rt></ruby>は1月より多い','冬は気温・降水量ともに低い':'<ruby>冬<rt>ふゆ</rt></ruby>は<ruby>気温<rt>きおん</rt></ruby>・<ruby>降水量<rt>こうすいりょう</rt></ruby>ともに<ruby>低<rt>ひく</rt></ruby>い'},
+     ans:'気温が高い月ほど降水量も多い傾向がある',
+     hint:'夏に向かって両方のグラフがどう動くか見ましょう。',expH:'夏に向かって両方増え、冬に減る傾向です。気温最高は8月、降水量最多は7月なので②は誤り。12月50mm＞1月45mmなので③は正しい！'},
+    {type:'read',tH:'1月と7月の<ruby>降水量<rt>こうすいりょう</rt></ruby>の<ruby>差<rt>さ</rt></ruby>は<ruby>何<rt>なん</rt></ruby>mmですか？',ans:130,unit:'mm',
+     hint:'175－45を<ruby>計算<rt>けいさん</rt></ruby>しましょう。',expH:'175－45＝130mmです。'},
+   ]},
+  {grade:6,title:'工場の生産量と従業員数の変化',titleH:'<ruby>工場<rt>こうじょう</rt></ruby>の<ruby>生産量<rt>せいさんりょう</rt></ruby>と<ruby>従業員数<rt>じゅうぎょういんすう</rt></ruby>の<ruby>変化<rt>へんか</rt></ruby>',
+   descH:'ある<ruby>工場<rt>こうじょう</rt></ruby>の<ruby>年別<rt>ねんべつ</rt></ruby><ruby>生産量<rt>せいさんりょう</rt></ruby>（<ruby>棒<rt>ぼう</rt></ruby>）と<ruby>従業員数<rt>じゅうぎょういんすう</rt></ruby>（<ruby>折<rt>お</rt></ruby>れ<ruby>線<rt>せん</rt></ruby>）',
+   chartType:'combo',labels:['2017','2018','2019','2020','2021','2022','2023'],
+   barValues:[850,920,980,720,810,1050,1180],lineValues:[120,125,130,110,115,128,135],
+   qs:[
+    {type:'read',tH:'2020年の<ruby>生産量<rt>せいさんりょう</rt></ruby>は<ruby>何<rt>なん</rt></ruby>ですか？',ans:720,unit:'',
+     hint:'棒グラフの2020年の高さを読みましょう。',expH:'2020年の生産量は720です。'},
+    {type:'read',tH:'2023年の<ruby>従業員数<rt>じゅうぎょういんすう</rt></ruby>は<ruby>何人<rt>なんにん</rt></ruby>ですか？',ans:135,unit:'人',
+     hint:'折れ線グラフの2023年の点を読みましょう。',expH:'2023年の従業員数は135人です。'},
+    {type:'choice',tH:'<ruby>生産量<rt>せいさんりょう</rt></ruby>が<ruby>最<rt>もっと</rt></ruby>も<ruby>少<rt>すく</rt></ruby>なかった<ruby>年<rt>ねん</rt></ruby>はどれですか？',
+     opts:['2017年','2019年','2020年','2021年'],ans:'2020年',
+     hint:'棒グラフで一番低い棒を探しましょう。',expH:'2020年の720が最小です。'},
+    {type:'analyze',tH:'グラフから<ruby>正<rt>ただ</rt></ruby>しく<ruby>読<rt>よ</rt></ruby>みとれることを<ruby>選<rt>えら</rt></ruby>んでください。',
+     opts:['生産量と従業員数は同じ年に増減している','2020年は生産量・従業員数ともに減少した','2021年以降は生産量・従業員数ともに増加し続けた','2023年の生産量は2017年の約1.4倍'],
+     oh:{'生産量と従業員数は同じ年に増減している':'<ruby>生産量<rt>せいさんりょう</rt></ruby>と<ruby>従業員数<rt>じゅうぎょういんすう</rt></ruby>は<ruby>同<rt>おな</rt></ruby>じ<ruby>年<rt>ねん</rt></ruby>に<ruby>増減<rt>ぞうげん</rt></ruby>している','2020年は生産量・従業員数ともに減少した':'2020年は<ruby>生産量<rt>せいさんりょう</rt></ruby>・<ruby>従業員数<rt>じゅうぎょういんすう</rt></ruby>ともに<ruby>減少<rt>げんしょう</rt></ruby>した','2021年以降は生産量・従業員数ともに増加し続けた':'2021年<ruby>以降<rt>いこう</rt></ruby>は<ruby>生産量<rt>せいさんりょう</rt></ruby>・<ruby>従業員数<rt>じゅうぎょういんすう</rt></ruby>ともに<ruby>増加<rt>ぞうか</rt></ruby>し<ruby>続<rt>つづ</rt></ruby>けた','2023年の生産量は2017年の約1.4倍':'2023年の<ruby>生産量<rt>せいさんりょう</rt></ruby>は2017年の<ruby>約<rt>やく</rt></ruby>1.4<ruby>倍<rt>ばい</rt></ruby>'},
+     ans:'2020年は生産量・従業員数ともに減少した',
+     hint:'2019年→2020年の棒と折れ線の変化を確認しましょう。',expH:'生産量980→720、従業員130→110でともに減少しています。1180÷850≒1.39倍で約1.4倍なので④も正しい！2021年以降：従業員は115→128→135で増加、生産量も810→1050→1180で増加なので③も正しいです。'},
+   ]},
+]
+
+};
+
+// =====================================================================
+// セッション状態
+// =====================================================================
+let grade=4, cat='bar', qList=[], qIdx=0, sesScore=0, sesTotal=0, wrongIds=[];
+let sessionStartTime=0;
+
+function setGrade(g){
+  grade=g;
+  document.querySelectorAll('.grade-btn').forEach(b=>b.classList.toggle('active',+b.dataset.grade===g));
+  const cats=GRADE_CATS[g];
+  if(!cats.includes(cat))cat=cats[0];
+  renderTabs(); startSession();
+}
+function setCategory(c){cat=c;renderTabs();startSession();}
+
+function renderTabs(){
+  const cats=GRADE_CATS[grade];
+  document.getElementById('tabsC').innerHTML=cats.map(c=>
+    `<button class="tab-btn ${c===cat?'active':''}" onclick="setCategory('${c}')">${CATS[c].icon} ${CATS[c].label}</button>`
+  ).join('');
+}
+
+const SESSION_SIZE=5;
+let allQList=[];
+let sessionPage=0;
+
+function startSession(retryWrong=false){
+  const pool=(DB[cat]||[]).filter(s=>s.grade<=grade);
+  if(!pool.length){
+    document.getElementById('panel').innerHTML='<div style="text-align:center;padding:40px;color:#888;">この学年の問題はまだ準備中です 🛠️</div>';
+    return;
+  }
+  if(retryWrong && wrongIds.length){
+    allQList=shuffle(wrongIds.slice()); wrongIds=[];
+  } else {
+    allQList=[];
+    pool.forEach(set=>set.qs.forEach((q,qi)=>allQList.push({set,q,id:set.title+'_'+qi})));
+    allQList=shuffle(allQList);
+  }
+  sessionPage=0;
+  startPage();
+}
+
+function startPage(){
+  const start=sessionPage*SESSION_SIZE;
+  qList=allQList.slice(start, start+SESSION_SIZE);
+  qIdx=0; sesScore=0; sesTotal=qList.length; hintUsed=false;
+  sessionStartTime=Date.now();
+  pickRandomChara();              // セッション開始時にキャラをランダム選択
+  showCharaMsg('idle');
+  renderQ();
+}
+
+function shuffle(a){
+  const arr=[...a];
+  for(let i=arr.length-1;i>0;i--){const j=0|Math.random()*(i+1);[arr[i],arr[j]]=[arr[j],arr[i]];}
+  return arr;
+}
+
+// =====================================================================
+// 問題描画
+// =====================================================================
+function renderQ(){
+  if(qIdx>=qList.length){renderScore();return;}
+  hintUsed=false;
+  const {set,q}=qList[qIdx];
+  const pct=Math.round(qIdx/sesTotal*100);
+  const typeTag={read:'<ruby>数値<rt>すうち</rt></ruby>よみとり',choice:'えらぼう',analyze:'<ruby>読<rt>よ</rt></ruby>みとり<ruby>分析<rt>ぶんせき</rt></ruby>'}[q.type]||'もんだい';
+
+  let html=`
+  <div class="prog-row"><span>${qIdx+1} / ${sesTotal} <ruby>問<rt>もん</rt></ruby></span><span>⭐ ${sesScore} / ${qIdx}　🔥${combo}</span></div>
+  <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div></div>
+  <div class="set-head">
+    <span class="set-icon">${CATS[cat].icon}</span>
+    <div><div class="set-title">${set.titleH}</div><div class="set-desc">${set.descH}</div></div>
+  </div>`;
+
+  if(set.chartType==='table') html+=buildTable(set);
+  else html+=`<div class="chart-wrap"><canvas id="cv" width="520" height="260"></canvas></div>`;
+
+  html+=`<div class="q-card">
+    <div class="q-badge">もんだい ${qIdx+1} <span class="q-type-tag">${typeTag}</span></div>
+    <div class="q-text">${q.tH}</div>
+  </div>`;
+
+  if(q.type==='choice'||q.type==='analyze'){
+    const sOpts=shuffle([...q.opts]);
+    window._currentOpts=sOpts;   // 正誤比較用に保存
+    html+=`<div class="opts">`;
+    sOpts.forEach((o,i)=>{
+      const disp=(q.oh&&q.oh[o])?q.oh[o]:o;
+      html+=`<button class="opt" id="o${i}" data-idx="${i}" onclick="checkChoice(${i})">
+        <span class="opt-lbl">${['ア','イ','ウ','エ'][i]}</span><span>${disp}</span></button>`;
+    });
+    html+=`</div>`;
+  } else {
+    html+=`<div class="num-row">
+      <input class="num-in" type="number" id="ni" placeholder="?" onkeydown="if(event.key==='Enter')checkNum()" step="0.1">
+      <span class="unit">${q.unit||''}</span>
+    </div>`;
+  }
+
+  html+=`<div class="btn-row">
+    ${q.type==='read'?'<button class="btn-ans" id="bAns" onclick="checkNum()">こたえる</button>':''}
+    <button class="btn-hint" id="bHint" onclick="showHint()" ${q.hint?'':'disabled'}>💡 ヒント</button>
+    <button class="btn-next" id="bNext" onclick="nextQ()">つぎの<ruby>問題<rt>もんだい</rt></ruby> →</button>
+  </div>
+  <div class="hint-box" id="hintBox">💡 ${q.hint||''}</div>
+  <div class="fb" id="fbBox"></div>`;
+
+  document.getElementById('panel').innerHTML=html;
+  if(set.chartType!=='table') setTimeout(()=>drawChart(set),30);
+  if(q.type==='read'){const ni=document.getElementById('ni');if(ni)ni.focus();}
+}
+
+function escA(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function buildTable(set){
+  const hds=set.headsH||set.heads;
+  const rws=set.rowsH||set.rows;
+  let h=`<div class="tbl-wrap"><table class="dtbl"><thead><tr>`;
+  hds.forEach(d=>h+=`<th>${d}</th>`);
+  h+=`</tr></thead><tbody>`;
+  rws.forEach((r,ri)=>{
+    const tot=ri===rws.length-1;
+    h+=`<tr>`;r.forEach((c,ci)=>h+=`<td class="${ci===0?'rh':''}${tot?' tot':''}">${c}</td>`);h+=`</tr>`;
+  });
+  return h+`</tbody></table></div>`;
+}
+
+// =====================================================================
+// 正誤チェック
+// =====================================================================
+function checkChoice(idx){
+  if(document.getElementById('o'+idx).classList.contains('dis'))return;
+  const {q,id}=qList[qIdx];
+  const btn=document.getElementById('o'+idx);
+  const selected=(window._currentOpts||[])[idx];  // シャッフル済み配列から正しいテキストを取得
+  const ok=selected===q.ans;
+  resolveAnswer(ok,q,id,()=>{
+    document.querySelectorAll('.opt').forEach(b=>b.classList.add('dis'));
+    if(ok) btn.classList.add('cor');
+    else{
+      btn.classList.add('wrg');
+      // 正解ボタンにも正解マークをつける
+      document.querySelectorAll('.opt').forEach(b=>{
+        const bidx=parseInt(b.getAttribute('data-idx'));
+        if((window._currentOpts||[])[bidx]===q.ans) b.classList.add('cor');
+      });
+    }
+  });
+}
+
+function checkNum(){
+  const {q,id}=qList[qIdx];
+  const ni=document.getElementById('ni');
+  if(!ni)return;
+  const v=parseFloat(ni.value);
+  if(isNaN(v)){ni.focus();return;}
+  const ok=Math.abs(v-q.ans)<0.05;
+  resolveAnswer(ok,q,id,()=>{
+    ni.classList.add(ok?'ci':'wi');
+    const ba=document.getElementById('bAns');if(ba)ba.disabled=true;
+  });
+}
+
+function resolveAnswer(ok,q,id,uiFn){
+  uiFn();
+  if(ok){
+    sesScore++; combo++;
+    const pts=hintUsed?5:10;
+    addXP(pts);
+    streak++;
+    if(combo>maxCombo)maxCombo=combo;
+    if(combo>=3)showComboToast(combo);
+    showFB(true,q.expH,pts);
+    fireStars(combo>=5?16:8);
+    showCharaMsg(combo>=5?'combo5':combo>=3?'combo3':'correct');
+    checkStamps(true, combo);
+  } else {
+    combo=0; streak=0;
+    wrongIds.push({set:qList[qIdx].set,q,id});
+    addMistake(qList[qIdx].set, q);   // まちがいノートに追加
+    showFB(false,q.expH,0);
+    showCharaMsg('wrong');
+    checkStamps(false, 0);
+  }
+  updateTopBar();
+  scheduleSave();  // 回答のたびに保存予約
+  document.getElementById('bNext').classList.add('show');
+}
+
+function showHint(){
+  const hb=document.getElementById('hintBox');
+  if(hb){hb.classList.add('show');hintUsed=true;
+    const bh=document.getElementById('bHint');if(bh)bh.disabled=true;}
+}
+
+function showFB(ok,expH,pts){
+  const box=document.getElementById('fbBox');
+  const comboHtml=combo>=3?`<span class="fb-combo">🔥 ${combo}れんぞく！</span>`:'';
+  const ptsHtml=pts>0?` <span style="font-weight:800;color:#ff8f00;">+${pts}XP</span>`:'';
+  box.className='fb '+(ok?'ok':'ng');
+  box.innerHTML=`<span class="fb-icon">${ok?'⭐':'💡'}</span><div><strong>${ok?'せいかい！':'ざんねん…'}</strong>${comboHtml}${ptsHtml}<br>${expH||''}</div>`;
+}
+
+function showComboToast(n){
+  const t=document.getElementById('comboToast');
+  const msgs=['','','','🔥 3れんぞく！','🔥🔥 4れんぞく！','⚡ 5れんぞく！'];
+  t.textContent=msgs[Math.min(n,msgs.length-1)]||(n+'れんぞく！🎉');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+function nextQ(){qIdx++;renderQ();}
+
+// =====================================================================
+// スコア画面
+// =====================================================================
+function renderScore(){
+  const elapsed=Math.round((Date.now()-sessionStartTime)/1000);
+  const min=Math.floor(elapsed/60),sec=elapsed%60;
+  const pct=Math.round(sesScore/sesTotal*100);
+  const medal=pct>=90?'🏆':pct>=70?'🥇':pct>=50?'🥈':'🥉';
+  const msg=pct>=90?'かんぺき！すごい！':pct>=70?'よくできました！':pct>=50?'もう少しがんばろう！':'もう一度ちょうせん！';
+  const stars='⭐'.repeat(Math.min(5,Math.round(pct/20)));
+
+  // つぎの5問があるか
+  const nextStart=(sessionPage+1)*SESSION_SIZE;
+  const hasNext=nextStart<allQList.length;
+  // 全ページ終了かどうか
+  const pageNum=sessionPage+1;
+  const totalPages=Math.ceil(allQList.length/SESSION_SIZE);
+
+  document.getElementById('panel').innerHTML=`
+  <div class="score-screen">
+    <div style="font-size:.82rem;color:var(--sub);margin-bottom:6px;">
+      ${pageNum} / ${totalPages} セット
+    </div>
+    <div class="score-big">${medal} ${pct}%</div>
+    <div class="grade-msg">${msg}</div>
+    <div class="medals-row">${[...stars].map((m,i)=>`<span class="medal" style="animation-delay:${i*.12}s">${m}</span>`).join('')}</div>
+    <div class="stat-grid">
+      <div class="stat-cell"><strong>${sesScore} / ${sesTotal}</strong><ruby>正解数<rt>せいかいすう</rt></ruby></div>
+      <div class="stat-cell"><strong>${maxCombo}</strong><ruby>最大<rt>さいだい</rt></ruby>コンボ</div>
+      <div class="stat-cell"><strong>${min}:${String(sec).padStart(2,'0')}</strong><ruby>かかった時間<rt>じかん</rt></ruby></div>
+      <div class="stat-cell"><strong>${totalScore}</strong>pt <ruby>合計<rt>ごごうけい</rt></ruby></div>
+    </div>
+    <div class="retry-btns">
+      ${hasNext
+        ? `<button class="btn-retry" style="background:linear-gradient(135deg,#66bb6a,#388e3c)" onclick="nextPage()">つぎの${SESSION_SIZE}もん ▶</button>`
+        : ''}
+      <button class="btn-retry" onclick="startSession()">最初からやる 🔄</button>
+      ${wrongIds.length
+        ? `<button class="btn-shuffle" onclick="startSession(true)">まちがいをやり直す（${wrongIds.length}<ruby>問<rt>もん</rt></ruby>）</button>`
+        : ''}
+    </div>
+  </div>`;
+  fireStars(pct>=80?24:10); maxCombo=0;
+  if(pct===100) showCharaMsg('combo5');
+  else if(pct>=80) showCharaMsg('correct');
+  else showCharaMsg('wrong');
+}
+
+function nextPage(){
+  sessionPage++;
+  startPage();
+}
+
+// =====================================================================
+// グラフ描画
+// =====================================================================
+const W=520,H=260,PL=52,PR=28,PT=22,PB=50;
+const CW=W-PL-PR,CH=H-PT-PB;
+
+function drawChart(set){
+  const cv=document.getElementById('cv');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,H);
+  const fn={bar:dBar,groupedBar:dGroupedBar,line:dLine,multiLine:dMultiLine,pie:dPie,combo:dCombo}[set.chartType];
+  if(fn)fn(ctx,set);
+}
+
+function nMax(v,t){const r=v/t,m=Math.pow(10,Math.floor(Math.log10(r)));return [1,2,5,10].find(f=>f*m>=r)*m*t;}
+function grid(ctx,sm,ticks,lColor='#777'){
+  const st=sm/ticks;
+  ctx.strokeStyle='#e8e8e8';ctx.lineWidth=1;
+  ctx.fillStyle=lColor;ctx.font='11px sans-serif';ctx.textAlign='right';
+  for(let i=0;i<=ticks;i++){
+    const v=st*i,y=PT+CH-(v/sm)*CH;
+    ctx.beginPath();ctx.moveTo(PL,y);ctx.lineTo(PL+CW,y);ctx.stroke();
+    ctx.fillText(v,PL-5,y+4);
+  }
+}
+function rRect(ctx,x,y,w,h,r){
+  if(h<=0)return;r=Math.min(r,w/2,h/2);
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h);
+  ctx.lineTo(x,y+h);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();ctx.fill();
+}
+
+function dBar(ctx,set){
+  const sm=nMax(Math.max(...set.values)*1.05,5);grid(ctx,sm,5);
+  const gap=CW/set.labels.length,bw=gap*.58;
+  set.labels.forEach((lb,i)=>{
+    const x=PL+i*gap+(gap-bw)/2,bh=(set.values[i]/sm)*CH;
+    ctx.fillStyle=set.colorSet?set.colorSet[i%set.colorSet.length]:'#29b6f6';
+    rRect(ctx,x,PT+CH-bh,bw,bh,4);
+    ctx.fillStyle='#222';ctx.font='bold 10px sans-serif';ctx.textAlign='center';
+    ctx.fillText(set.values[i]+(set.unit||''),x+bw/2,PT+CH-bh-4);
+    ctx.fillStyle='#555';ctx.font='10px sans-serif';ctx.fillText(lb,x+bw/2,PT+CH+18);
+  });
+}
+
+function dGroupedBar(ctx,set){
+  const all=set.datasets.flatMap(d=>d.values);
+  const sm=nMax(Math.max(...all)*1.1,5);grid(ctx,sm,5);
+  const n=set.datasets.length,gw=CW/set.labels.length,bw=gw*.72/n;
+  set.labels.forEach((lb,li)=>{
+    set.datasets.forEach((ds,di)=>{
+      const x=PL+li*gw+gw*.14+di*bw,bh=(ds.values[li]/sm)*CH;
+      ctx.fillStyle=ds.color;rRect(ctx,x,PT+CH-bh,bw-1,bh,3);
+    });
+    ctx.fillStyle='#555';ctx.font='10px sans-serif';ctx.textAlign='center';
+    ctx.fillText(lb,PL+li*gw+gw/2,PT+CH+18);
+  });
+  set.datasets.forEach((ds,di)=>{
+    const lx=PL+di*85;
+    ctx.fillStyle=ds.color;ctx.fillRect(lx,H-15,11,11);
+    ctx.fillStyle='#333';ctx.font='10px sans-serif';ctx.textAlign='left';
+    ctx.fillText(ds.label,lx+14,H-5);
+  });
+}
+
+function dLine(ctx,set){
+  const sm=nMax(Math.max(...set.values)*1.1,5);grid(ctx,sm,5);
+  const step=CW/(set.labels.length-1);
+  ctx.strokeStyle='#ef5350';ctx.lineWidth=2.5;ctx.beginPath();
+  set.values.forEach((v,i)=>{const x=PL+i*step,y=PT+CH-(v/sm)*CH;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.stroke();
+  set.values.forEach((v,i)=>{
+    const x=PL+i*step,y=PT+CH-(v/sm)*CH;
+    ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fillStyle='#b71c1c';ctx.fill();
+    ctx.fillStyle='#222';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText(v,x,y-8);
+    ctx.fillStyle='#666';ctx.font='9px sans-serif';ctx.fillText(set.labels[i],x,PT+CH+17);
+  });
+}
+
+function dMultiLine(ctx,set){
+  const all=set.datasets.flatMap(d=>d.values);
+  const sm=nMax(Math.max(...all)*1.1,5);grid(ctx,sm,5);
+  const step=CW/(set.labels.length-1);
+  set.datasets.forEach(ds=>{
+    ctx.strokeStyle=ds.color;ctx.lineWidth=2.5;ctx.beginPath();
+    ds.values.forEach((v,i)=>{const x=PL+i*step,y=PT+CH-(v/sm)*CH;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+    ctx.stroke();
+    ds.values.forEach((v,i)=>{
+      const x=PL+i*step,y=PT+CH-(v/sm)*CH;
+      ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle=ds.color;ctx.fill();
+    });
+  });
+  set.labels.forEach((lb,i)=>{
+    ctx.fillStyle='#666';ctx.font='9px sans-serif';ctx.textAlign='center';
+    ctx.fillText(lb,PL+i*step,PT+CH+17);
+  });
+  // 凡例
+  set.datasets.forEach((ds,di)=>{
+    const lx=PL+di*80;
+    ctx.strokeStyle=ds.color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(lx,H-9);ctx.lineTo(lx+16,H-9);ctx.stroke();
+    ctx.fillStyle=ds.color;ctx.font='10px sans-serif';ctx.textAlign='left';ctx.fillText(ds.label,lx+19,H-5);
+  });
+}
+
+function dPie(ctx,set){
+  const cx=W/2-55,cy=H/2+5,r=Math.min(W,H)*.3;
+  const tot=set.values.reduce((a,b)=>a+b,0);
+  const colors=set.colorSet||['#ef5350','#ff7043','#ffd600','#66bb6a','#b0bec5'];
+  let angle=-Math.PI/2;
+  set.values.forEach((v,i)=>{
+    const slice=v/tot*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);ctx.closePath();
+    ctx.fillStyle=colors[i%colors.length];ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    if(v>=7){
+      const ma=angle+slice/2;
+      ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(v+'%',cx+Math.cos(ma)*r*.62,cy+Math.sin(ma)*r*.62);
+    }
+    angle+=slice;
+  });
+  ctx.textBaseline='alphabetic';
+  const lgX=W-150;
+  (set.labH||set.labels).forEach((lb,i)=>{
+    const ly=22+i*27;
+    ctx.fillStyle=colors[i%colors.length];ctx.beginPath();ctx.arc(lgX+7,ly,7,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#222';ctx.font='11px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText(set.labels[i]+' '+set.values[i]+'%',lgX+18,ly);
+  });
+  ctx.textBaseline='alphabetic';
+}
+
+function dCombo(ctx,set){
+  const ticks=5;
+  const smB=nMax(Math.max(...set.barValues)*1.1,ticks);
+  const smL=nMax(Math.max(...set.lineValues)*1.15,ticks);
+  const n=set.labels.length,gap=CW/n,bw=gap*.48;
+  // 棒グリッド（左軸青）
+  ctx.strokeStyle='#e8e8e8';ctx.lineWidth=1;
+  for(let i=0;i<=ticks;i++){
+    const v=smB/ticks*i,y=PT+CH-(v/smB)*CH;
+    ctx.beginPath();ctx.moveTo(PL,y);ctx.lineTo(PL+CW,y);ctx.stroke();
+    ctx.fillStyle='#1565c0';ctx.font='10px sans-serif';ctx.textAlign='right';ctx.fillText(v,PL-4,y+4);
+  }
+  // 右軸（折れ線・赤）
+  for(let i=0;i<=ticks;i++){
+    const v=Math.round(smL/ticks*i),y=PT+CH-(v/smL)*CH;
+    ctx.fillStyle='#c62828';ctx.font='10px sans-serif';ctx.textAlign='left';ctx.fillText(v+'℃',PL+CW+2,y+4);
+  }
+  // 棒
+  set.barValues.forEach((v,i)=>{
+    const x=PL+i*gap+(gap-bw)/2,bh=(v/smB)*CH;
+    ctx.fillStyle='rgba(41,182,246,0.65)';rRect(ctx,x,PT+CH-bh,bw,bh,3);
+  });
+  // 折れ線
+  ctx.strokeStyle='#e53935';ctx.lineWidth=2.5;ctx.beginPath();
+  set.lineValues.forEach((v,i)=>{const x=PL+i*gap+gap/2,y=PT+CH-(v/smL)*CH;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.stroke();
+  set.lineValues.forEach((v,i)=>{
+    const x=PL+i*gap+gap/2,y=PT+CH-(v/smL)*CH;
+    ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle='#c62828';ctx.fill();
+  });
+  set.labels.forEach((lb,i)=>{
+    ctx.fillStyle='#555';ctx.font='8px sans-serif';ctx.textAlign='center';
+    ctx.fillText(lb,PL+i*gap+gap/2,PT+CH+16);
+  });
+  // 凡例
+  ctx.fillStyle='rgba(41,182,246,.7)';ctx.fillRect(PL,H-14,11,11);
+  ctx.fillStyle='#333';ctx.font='10px sans-serif';ctx.textAlign='left';ctx.fillText('降水量(mm)',PL+14,H-4);
+  ctx.strokeStyle='#e53935';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(PL+90,H-9);ctx.lineTo(PL+102,H-9);ctx.stroke();
+  ctx.fillStyle='#c62828';ctx.fillText('気温(℃)',PL+105,H-4);
+}
+
+// =====================================================================
+// エフェクト
+// =====================================================================
+function fireStars(n=8){
+  const c=document.getElementById('starsC');c.style.display='block';
+  const em=['⭐','🌟','✨','💫','🎉','🎊'];
+  for(let i=0;i<n;i++){
+    setTimeout(()=>{
+      const s=document.createElement('span');s.className='star';
+      s.textContent=em[0|Math.random()*em.length];
+      s.style.left=Math.random()*88+'%';s.style.top=(Math.random()*45+35)+'%';
+      s.style.animationDelay=Math.random()*.3+'s';
+      c.appendChild(s);setTimeout(()=>s.remove(),1500);
+    },i*60);
+  }
+  setTimeout(()=>c.style.display='none',2400);
+}
+
+// =====================================================================
+// 起動：localStorageからデータを復元してから開始
+// =====================================================================
+loadData();        // 保存データを復元
+updateTopBar();    // XP・レベル表示を更新
+updateNoteBadge(); // まちがいノートバッジを更新
+renderTabs();
+startSession();
+</script>
+</body>
+</html>
